@@ -269,7 +269,7 @@ LED 閃爍次數對照見 V4 驅動器 p.15–16（§3.5；Hall 出錯＝紅燈 
 - 缺陷（已修）：舊程式把 20A2h 任何非 `00` 都印成 `driver already enabled`，每 50 ms 擋一次，狀態機永遠進不了 ARMING。現在：dryrun 兩軸皆 `C0C0` 時只顯示 `# would-block: 20A2h=C0C0 (alarm)` 並繼續；`40`、`80`、混合狀態仍擋住且用真實狀態名稱；`live` 任何非 `00` 都擋；擋住時至少等 1 s 才再讀，同一原因只印一次。
 - 修正後已重新燒錄並實測，結果見下一段。
 
-**dryrun 實測結果（2026-11-23，馬達未接，僅 dryrun；log：`phase3-drive/logs/device-monitor-261123-144822.log`、`logs/device-monitor-261123-150455.log`，已與 log 核對）**
+**dryrun 實測結果（2026-11-23，馬達未接，僅 dryrun；log：`phase3-drive/logs/device-monitor-261123-144822.log`、`logs/device-monitor-261123-150455.log`（**這兩份 log 本機已不存在，未提交**），已與 log 核對）**
 - **(d) 開機時 SWA 已開**：印 `# ARM blocked: SWA already on, switch it off first`，撥關再撥開後才解鎖（`ARMING`→`ARMED`）。**通過。**
 - **解鎖序列**：`200Dh=3`（`01 06 20 0D 00 03 53 C8`）→ `2088h=0,0`（`01 10 20 88 00 02 04 00 00 00 00 63 A8`）→ `200Eh=0x08`（`01 06 20 0E 00 08 E2 0F`），幀與預期逐字相同。**通過。**
 - **速度**：最大 ±30（2088h 寫入 `00 1E 00 1E` 與 `FF E2 FF E2`），斜坡每 50 ms 3.0 r/min，0→30 約 0.45 s（使用者回報，與斜坡步進一致），回中 −30→0 約 0.5 s，回中後歸 0。30 r/min 上限檢查**通過**。
@@ -278,7 +278,7 @@ LED 閃爍次數對照見 V4 驅動器 p.15–16（§3.5；Hall 出錯＝紅燈 
 - **T2 判定**：(a)(b) 在 dryrun 均已看到，**使用者判定通過（馬達未接，僅 dryrun）**。**使用者隨後聲明 T2 (a)(b) 通過並指定 `FAILSAFE_VERIFIED=1`（見下方「live 編譯」）。**
 - 其他讀值：20A5h＝0x0200、20A2h＝0xC0C0（見上段）；dryrun 每 50 ms 輸出一行 `# DRY W` 的 2088h 寫入，量大屬預期。
 
-**T1 實測結果（2026-11-23，`dryrun`，馬達與 Hall 已接、輪子懸空；log：`phase3-drive/logs/device-monitor-261123-152439.log`、`logs/device-monitor-261123-153342.log`，已與 log 核對；使用者判定通過）**
+**T1 實測結果（2026-11-23，`dryrun`，馬達與 Hall 已接、輪子懸空；log：`phase3-drive/logs/device-monitor-261123-152439.log`、`logs/device-monitor-261123-153342.log`（**這兩份 log 本機已不存在，未提交**），已與 log 核對；使用者判定通過）**
 - **開機讀值**：20A5h／20A6h＝0000、**20A2h＝0000（解軸，驅動器正常狀態）**，Hall 故障消失（接上馬達與 Hall 後）。預檢讀值：2022h＝1、2008h＝1000、2000h＝0、200Fh＝1、2007h＝0、2011h＝5、**2023h＝0**、20A0h＝26057（原始值）。
 - **解鎖**：沒有 `would-block`，`ARMING`→`ARMED`。
 - **手轉左輪**：回授（20ABh）取樣到 +34.1、−25.1 r/min，超過門檻 45 r/min（讀到 48.3）→ `FAULT_STOP`（`200Eh=0x05`、`2088h=0,0`，只印出）→ `LATCHED reason=OVERSPEED detail=0x1E3`（483＝48.3 r/min）。

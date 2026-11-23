@@ -7,6 +7,7 @@
 - **專案狀態只看 `PROJECT.md`**（開頭有「現況與下一步」）。標示「待填」「待確認」的項目不得自行假設，有疑問先問使用者。
 - 之後的測試由 **Codex 與使用者**進行。Claude 的 `/handoff` 筆記 Codex 看不到，**交接以 `PROJECT.md` 為準**。
 - 設計與停止條件：`phase3-drive/DESIGN.md`；手冊以 `docs/V4_RS485.pdf`、`docs/V4_驅動器手冊.pdf` 為準（V4.2）。
+- 程式碼結構圖（本機產生、不提交；沒有就用 `graphify update .` 重建，只解析程式碼、不呼叫模型）：`graphify-out/GRAPH_REPORT.md`。
 - 新的實測結果要寫回 `PROJECT.md` 並註明來源（使用者回報，或已與 log 核對）。
 
 ## 硬體安全（優先於一切執行便利）

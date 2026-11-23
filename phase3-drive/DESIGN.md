@@ -157,7 +157,7 @@ BOOT ─(預檢通過)→ DISARMED ─(解鎖條件全滿足)→ ARMING ─(序�
 
 **步驟**
 - **T1 乾跑**：`dryrun` 環境，驅動器上電、馬達已接；確認 20A5h／20A6h＝0（Hall 故障應消失）、20A2h 為解軸、2022h／2008h／200Fh／2007h／2000h 的實際值，記錄 dc_voltage 讀值；轉動油門與 SWA，檢查印出的指令與換算。
-  - **實測結果（2026-11-23，dryrun，馬達與 Hall 已接、懸空；log：`logs/device-monitor-261123-152439.log`、`logs/device-monitor-261123-153342.log`；使用者判定通過）**：開機 20A5h／20A6h＝0000、20A2h＝0000（解軸），Hall 故障消失；解鎖無 `would-block`，`ARMING`→`ARMED`；預檢讀值 2022h＝1、2008h＝1000、2000h＝0、200Fh＝1、2007h＝0、2011h＝5、2023h＝0。手轉左輪回授最大 +34.1／−25.1 r/min，超過 45 r/min（讀到 48.3）→ `FAULT_STOP`（`200Eh=0x05`、`2088h=0,0` 只印出）→ `LATCHED reason=OVERSPEED detail=0x1E3`；手轉右輪 −54.8 r/min → `LATCHED detail=0x224`。轉矩全程 0.0 A。**軟體超速保護在實機有效**（2023h＝0，驅動器本身不檢查超速）。方向正負號仍未知，留待 T4。log 沒有 dc_voltage 讀值，電壓仍待電表。電池平衡線 7 針（使用者數）→ 6S，與 dc_voltage 27.83 V 仍不一致（`PROJECT.md` 項 22、25）。
+  - **實測結果（2026-11-23，dryrun，馬達與 Hall 已接、懸空；log：`logs/device-monitor-261123-152439.log`、`logs/device-monitor-261123-153342.log`（**這兩份 log 本機已不存在，未提交**）；使用者判定通過）**：開機 20A5h／20A6h＝0000、20A2h＝0000（解軸），Hall 故障消失；解鎖無 `would-block`，`ARMING`→`ARMED`；預檢讀值 2022h＝1、2008h＝1000、2000h＝0、200Fh＝1、2007h＝0、2011h＝5、2023h＝0。手轉左輪回授最大 +34.1／−25.1 r/min，超過 45 r/min（讀到 48.3）→ `FAULT_STOP`（`200Eh=0x05`、`2088h=0,0` 只印出）→ `LATCHED reason=OVERSPEED detail=0x1E3`；手轉右輪 −54.8 r/min → `LATCHED detail=0x224`。轉矩全程 0.0 A。**軟體超速保護在實機有效**（2023h＝0，驅動器本身不檢查超速）。方向正負號仍未知，留待 T4。log 沒有 dc_voltage 讀值，電壓仍待電表。電池平衡線 7 針（使用者數）→ 6S，與 dc_voltage 27.83 V 仍不一致（`PROJECT.md` 項 22、25）。
 - **T2 斷線保護驗證（規則 11；接馬達之前的硬門檻，使用者決定；判定已於 2026-11-23 修訂）**：
   - 背景（使用者回報的 Phase 1 觀察，Claude 未見輸出）：遙控器關機後，FS-iA6B 持續送舊值，`status` 仍是 `RECEIVING`、CH2 凍結，**所以 `RECEIVING` 不能單獨當遙控器在線的依據**。使用者已在 FS-i6X 設定失效保護（CH2→1500、CH7→1000，皆 ON，通道數 7），Phase 1 重測 3/3：關機後 CH7 在 1 秒內回 1000、CH2 回 1500；重開機後恢復。**這只是 Phase 1 觀察，`dryrun` 尚未驗證，不得寫成已通過。**
   - **通過條件（兩者都要在 `dryrun` 看到才算 T2 完成）**：
@@ -165,7 +165,7 @@ BOOT ─(預檢通過)→ DISARMED ─(解鎖條件全滿足)→ ARMING ─(序�
     - **(b)** 拔 i-BUS 訊號線或接收器斷電時，`status` 進入 `STALE`（`R` 行、`# T2 STALE observed …`）並停機：ARMED 時同樣印出上述停止序列。
   - 輸出行：`dryrun` 在所有狀態下輸出 `R,ms,status,frame_age_ms,unchanged_ms,throttle,arm`（狀態改變時與每 1 秒）、`# T2 STALE observed after N ms without frames`（第一次從 RECEIVING 進入 STALE 時；字面刻意不含 PASS）、`# T2 stale_seen=0|1 frame_age_ms=N values_unchanged_ms=M`（每 5 秒）。**注意：`# T2 STALE observed` 這一行只代表 (b) 的 STALE 觀察，不代表 (a) 或整個 T2 通過**（字面刻意不含 PASS，T2 是否通過以本節 (a)(b) 為準）。(a) 靠 `R` 行的 `arm` 欄與 `S`／`# DRY W` 行判讀；`R` 行每 1 秒才印一次，「1 秒內」的時間精度以 Phase 1 的 100 ms CSV 觀察為準，`dryrun` 驗證的是狀態機確實因此停機。
   - **不通過**：(a) 遙控器關機後 `arm` 欄沒有低於 1700（或狀態機沒有停機）；(b) 拔線或接收器斷電後 `status` 一直是 `RECEIVING`。任何一項不通過，須先處理失效保護或接收器設定才能進 live；通過之前不得接馬達、不得指定 `FAILSAFE_VERIFIED`。
-  - **實測結果（2026-11-23，dryrun，馬達未接；log：`logs/device-monitor-261123-144822.log`、`logs/device-monitor-261123-150455.log`；使用者判定 T2 通過）**：
+  - **實測結果（2026-11-23，dryrun，馬達未接；log：`logs/device-monitor-261123-144822.log`、`logs/device-monitor-261123-150455.log`（**這兩份 log 本機已不存在，未提交**）；使用者判定 T2 通過）**：
     - **(a)** 遙控器關機 → `S,…,DISARMING` → `# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8` → `# DRY W 01 06 20 0E 00 07 A2 0B` → `S,…,DISARMED`；從最後一次值變化到 `DISARMING` 約 1.05 s，是**上限**（關機時刻無法精確得知；`R` 行每秒一行，分辨不出 1 秒內）。Phase 1 的 100 ms CSV 重測 3/3 在 1 秒內（使用者回報）。
     - **(b)** ARMED 時拔 i-BUS 訊號線 → 250 ms 後 `STALE`（`# T2 STALE observed after 250 ms without frames`）→ 同一週期（相同時間戳）`DISARMING` → 停止序列 → `DISARMED`；插回後 SWA 仍開 → `# ARM blocked: SWA already on, switch it off first`。
     - 其他：(d) 開機時 SWA 已開被擋、撥關再開才解鎖；解鎖序列三個幀逐字正確；速度最大 ±30（`00 1E 00 1E`／`FF E2 FF E2`），斜坡每 50 ms 3.0 r/min，回中歸 0。
