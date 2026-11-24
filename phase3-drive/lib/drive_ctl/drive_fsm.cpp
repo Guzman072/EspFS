@@ -7,6 +7,8 @@
 
 namespace {
 constexpr uint16_t kStatusEnabledMask = 0xC0C0;  // 20A2h：左 bit15–14、右 bit7–6；00 00＝解軸（未使能）
+constexpr uint32_t kStopSampleWindowMs = 3000;
+constexpr int kStopSpeed01 = 10;  // 1.0 r/min，取樣值須嚴格低於此門檻
 
 int absInt(int v) { return v < 0 ? -v : v; }
 
@@ -81,11 +83,13 @@ DriveFsm::DriveFsm(ITransport& transport, DriveLink& link, IRemote& remote, ILin
     link_.setVelocitySigns(cfg.leftSign, cfg.rightSign);  // 讀回端與寫入端（clampRaw）用同一組正負號
 }
 
-void DriveFsm::setState(DriveState s) {
+uint32_t DriveFsm::setState(DriveState s) {
     state_ = s;
+    const uint32_t now = t_.nowMs();
     char line[48];
-    std::snprintf(line, sizeof line, "S,%u,%s", static_cast<unsigned>(t_.nowMs()), driveStateName(s));
+    std::snprintf(line, sizeof line, "S,%u,%s", static_cast<unsigned>(now), driveStateName(s));
     out_.line(line);
+    return now;
 }
 
 void DriveFsm::note(int key, const char* text) {
@@ -253,6 +257,11 @@ void DriveFsm::doBoot() {
 }
 
 void DriveFsm::doDisarmed(uint32_t now) {
+    if (stopSampling_) {
+        updateRemoteFlags(now);
+        sampleStop(now);
+        return;
+    }
     // 混控版在每次 poll 後檢查雙軸，看到任一軸離開中位或失聯就重計。
     if (cfg_.steerCh >= 0) updateRemoteFlags(now);
     if (!tickDue(now)) return;
@@ -332,11 +341,11 @@ void DriveFsm::doArming(uint32_t now) {
     everArmed_ = true;  // 從第一筆寫入開始，任何失敗都要送停止指令
     leftSlew_.reset();
     rightSlew_.reset();
-    Status s = link_.writeSpeedMode();
+    Status s = link_.writeSpeedMode(WriteLog::Always);
     if (s != Status::OK) return faultFromStatus(s);
-    s = link_.writeSpeeds(0, 0);
+    s = link_.writeSpeeds(0, 0, false, WriteLog::Always);
     if (s != Status::OK) return faultFromStatus(s);
-    s = link_.writeControl(kCtrlEnable);
+    s = link_.writeControl(kCtrlEnable, false, WriteLog::Always);
     if (s != Status::OK) return faultFromStatus(s);
 #ifndef DRIVE_DRYRUN
     // 乾跑沒有真的寫入，驅動器狀態不會改變，所以不做「寫入後預期狀態改變」的檢查
@@ -426,11 +435,11 @@ void DriveFsm::doArmed(uint32_t now) {
 }
 
 void DriveFsm::doDisarm(bool armSwitchOff) {
-    setState(DriveState::DISARMING);
+    disarmingAt_ = setState(DriveState::DISARMING);
     // 正常解除：先 2088h＝0,0，再 200Eh＝0x07（停機）
-    Status s = link_.writeSpeeds(0, 0);
+    Status s = link_.writeSpeeds(0, 0, false, WriteLog::Always);
     if (s != Status::OK) return faultFromStatus(s);
-    s = link_.writeControl(kCtrlStop);
+    s = link_.writeControl(kCtrlStop, false, WriteLog::Always);
     if (s != Status::OK) return faultFromStatus(s);
     leftSlew_.reset();
     rightSlew_.reset();
@@ -438,7 +447,37 @@ void DriveFsm::doDisarm(bool armSwitchOff) {
     centerValid_ = false;
     lastNoteKey_ = -1;
     clearBlock();
-    setState(DriveState::DISARMED);
+    disarmedAt_ = setState(DriveState::DISARMED);
+    stopSampling_ = true;
+    nextStopSampleMs_ = 0;
+    stopReached_[0] = stopReached_[1] = false;
+    link_.setLogAll(true);
+}
+
+void DriveFsm::sampleStop(uint32_t now) {
+    const uint32_t elapsed = now - disarmedAt_;
+    if (elapsed >= kStopSampleWindowMs) {
+        if (!stopReached_[0]) out_.line("# STOP L not_reached");
+        if (!stopReached_[1]) out_.line("# STOP R not_reached");
+        stopSampling_ = false;
+        return;
+    }
+    if (elapsed < nextStopSampleMs_) return;
+    // 每 50 ms 一個取樣時段。交易如有延遲，跳過已錯過的時段。
+    nextStopSampleMs_ = (elapsed / kControlPeriodMs + 1) * kControlPeriodMs;
+    uint16_t fb[4];
+    uint32_t sampledAt = 0;
+    const Status s = link_.read(0x20AB, 4, fb, 1, &sampledAt);
+    if (s != Status::OK) return faultFromStatus(s);
+    if (sampledAt - disarmedAt_ > kStopSampleWindowMs) return;
+    for (int wheel = 0; wheel < 2; ++wheel) {
+        if (stopReached_[wheel] || absInt(static_cast<int16_t>(fb[wheel])) >= kStopSpeed01) continue;
+        stopReached_[wheel] = true;
+        char line[40];
+        std::snprintf(line, sizeof line, "# STOP %c ms=%u", wheel == 0 ? 'L' : 'R',
+                      static_cast<unsigned>(sampledAt - disarmingAt_));
+        out_.line(line);
+    }
 }
 
 void DriveFsm::faultFromStatus(Status s) {
@@ -448,8 +487,11 @@ void DriveFsm::faultFromStatus(Status s) {
 
 void DriveFsm::doFault(FaultReason reason, uint32_t detail) {
     if (state_ == DriveState::LATCHED || state_ == DriveState::FAULT_STOP) return;
+    // 取樣中的驅動器已完成正常停機，讀取失敗時鎖定並停止通訊。
+    const bool needsStop = everArmed_ && !stopSampling_;
+    stopSampling_ = false;
     setState(DriveState::FAULT_STOP);
-    if (everArmed_) {
+    if (needsStop) {
         // 故障路徑：先 200Eh＝0x05（急停），再 2088h＝0,0；各嘗試一次，不管結果。
         // 通訊本身壞掉時這兩筆也可能失敗，此時靠驅動器的 2000h 掉線保護停機。
         link_.writeControl(kCtrlEmergencyStop, true);

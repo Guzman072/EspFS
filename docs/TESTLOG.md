@@ -145,14 +145,14 @@
 
 ### 階段三：混控版 dryrun
 
-來源為已核對的下列 log。使用者回報前四筆屬驅動器未上電、開機探測逾時的測試。前兩筆是開機後的片段，逾時狀態行見後兩筆。CH4 的實體操作方向及測試判定由使用者回報。時間均為 ESP32 log 的毫秒時間戳。
+來源為已核對的下列 log。由 log 推論前四筆測試時驅動器未回應（未上電）。前兩筆是開機後的片段，逾時狀態行見後兩筆。CH4 的實體操作方向及測試判定由使用者回報。時間均為 ESP32 log 的毫秒時間戳。
 
 | Log | 結果 |
 |---|---|
-| [113113_T2(a)](../phase3-drive/logs/device-monitor-261124-113113_T2%28a%29.log) | 驅動器未上電。片段只有遙控器 `R`／T2 摘要，沒有開機探測或解鎖狀態行。80,402 ms 的 CH2／CH7／CH4 為 `1999/1000/1999`，81,416 ms 變為 `1500/1000/1501`，仍為 `RECEIVING`。僅記錄輸入行為。 |
-| [113316_T2(b)](../phase3-drive/logs/device-monitor-261124-113316_T2%28b%29.log) | 驅動器未上電。片段沒有開機探測或解鎖狀態行。180,898 ms 在 261 ms 未收到訊框後進入 `STALE`，當時通道值為 `1371/2000/1000`。僅記錄輸入行為。 |
-| [113640](../phase3-drive/logs/device-monitor-261124-113640.log) | 驅動器未上電。531 ms `BOOT`，887 ms 讀 `20A0h` 三次皆逾時，進入 `FAULT_STOP`、`LATCHED`，原因 `PROBE_FAIL`。 |
-| [135301](../phase3-drive/logs/device-monitor-261124-135301.log) | 驅動器未上電。531 ms `BOOT`，887 ms 讀 `20A0h` 三次皆逾時，進入 `FAULT_STOP`、`LATCHED`，原因 `PROBE_FAIL`。 |
+| [113113_T2(a)](../phase3-drive/logs/device-monitor-261124-113113_T2%28a%29.log) | 片段只有遙控器 `R`／T2 摘要，沒有開機探測或解鎖狀態行。80,402 ms 的 CH2／CH7／CH4 為 `1999/1000/1999`，81,416 ms 變為 `1500/1000/1501`，仍為 `RECEIVING`。僅記錄輸入行為。 |
+| [113316_T2(b)](../phase3-drive/logs/device-monitor-261124-113316_T2%28b%29.log) | 片段沒有開機探測或解鎖狀態行。180,898 ms 在 261 ms 未收到訊框後進入 `STALE`，當時通道值為 `1371/2000/1000`。僅記錄輸入行為。 |
+| [113640](../phase3-drive/logs/device-monitor-261124-113640.log) | 531 ms `BOOT`，887 ms 讀 `20A0h` 三次皆逾時，進入 `FAULT_STOP`、`LATCHED`，原因 `PROBE_FAIL`。 |
+| [135301](../phase3-drive/logs/device-monitor-261124-135301.log) | 531 ms `BOOT`，887 ms 讀 `20A0h` 三次皆逾時，進入 `FAULT_STOP`、`LATCHED`，原因 `PROBE_FAIL`。 |
 | [135557](../phase3-drive/logs/device-monitor-261124-135557.log) | 632 ms 進入 `DISARMED`。23,903–29,903 ms 各次取樣的 CH2 都在死區、CH7 為 2000、CH4 為 2000，期間無 `ARMING` 或 `ARMED`。CH4 偏轉時無法解鎖。 |
 | [135943](../phase3-drive/logs/device-monitor-261124-135943.log) | 兩次解鎖、混控和 T2 (a)(b) 停機序列均有記錄。細節見下方。 |
 | [140438](../phase3-drive/logs/device-monitor-261124-140438.log) | 7,583、8,338 ms 已出現 `STALE`，首次 `ARMED` 在 16,314 ms，未形成「先解鎖再斷訊」的驗證順序。這次不計。 |
@@ -163,3 +163,22 @@
 - **135943 T2 (b) i-BUS 訊框中斷**：47,210 ms 再次解鎖。55,534 ms 在 250 ms 未收到訊框後進入 `STALE`，CH7 仍是 2000。55,549 ms（比 `STALE` 晚 15 ms）進入 `DISARMING`，依序印出雙輪零速、`200Eh=0x07`，再回到 `DISARMED`。這是 dryrun 的狀態機與預計幀時序。
 - **140730 步驟 10**：4,205 ms `ARMED`。8,876 ms 在 250 ms 未收到訊框後出現 `STALE`，8,880 ms 解除並印出雙輪零速及停機，8,890 ms `DISARMED`。13,923 ms 復訊時 CH7 仍是 2000，印出 `# ARM blocked: SWA already on, switch it off first`。CH7 撥關後在 22,648 ms 記錄為 1000，重新撥開後才在 27,058 ms 再次 `ARMED`。
 - **使用者確認（2026-11-24）**：CH4 右推為高值。混控版 T2 (a)(b) 與步驟 10 通過。使用者同意在 `live` 設定 `STEER_CH=3` 並維持 `FAILSAFE_VERIFIED=1`。`live` 混控待輪子懸空實測。
+
+### 階段三：混控版 live 懸空測試
+
+來源為**已與 log 核對＋使用者回報**。[device-monitor-261124-142205.log](../phase3-drive/logs/device-monitor-261124-142205.log)
+
+- 兩次 `ARMED` 分別出現在 10.738 s、99.528 s。兩輪 `error_code` 的取樣全部為 0，最高絕對速度為 90.6 r/min，兩輪轉矩電流均在 ±0.6 A 內。
+
+| 操作 | 取樣時間（s） | 左輪回授（r/min） | 右輪回授（r/min） |
+|---|---:|---:|---:|
+| 前進右轉 | 25.826 | 84.0 | 44.8 |
+| 前進左轉 | 28.328 | 49.9 | 90.2 |
+| 倒車右推 | 42.842 | −14.5 | −51.3 |
+| 倒車左推 | 46.846 | −89.1 | −43.6 |
+| 油門滿加右推 | 77.875 | 89.9 | 66.9 |
+
+- **T2 (a)** 遙控器關機後，82.298 s `DISARMING`、82.317 s `DISARMED`。82.833 s 的 `R` 行仍為 `RECEIVING`，CH2／CH7／CH4 為 `1500/1000/1501`。
+- **T2 (b)** i-BUS 訊框中斷 250 ms 後，113.847 s 出現 `STALE`，113.853 s `DISARMING`、113.871 s `DISARMED`。
+- 使用者回報兩次輪子都在 1 秒內停止、無異音，轉向方向正確。
+- 此版 log 兩次停機的零速與停機寫入都沒有 `T` 行，解除後也沒有速度 `D` 行。可核對狀態轉換，實際停止時間待用新版紀錄量測。

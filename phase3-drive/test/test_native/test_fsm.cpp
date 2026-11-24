@@ -410,7 +410,7 @@ static void test_arming_fails_when_status_not_enabled_afterwards() {
     TEST_ASSERT_TRUE(g->log.has(",DISARMING"));
     // 重新解鎖：SWA 關閉過了，但油門要先回中位 ≥ 0.5 s
     g->r.ch[kArm] = 2000;
-    g->run(1000);
+    g->run(3100);
     TEST_ASSERT_EQUAL(DriveState::DISARMED, g->fsm.state());   // 油門還在 2000
     g->r.ch[kThrottle] = 1500;
     g->run(300);
@@ -429,7 +429,7 @@ static void test_arming_fails_when_status_not_enabled_afterwards() {
     expectPrefix(*g, mark, {"S2088=0,0", "W200E=0007"});
     g->r.st = RemoteStatus::RECEIVING;   // 訊號回來，SWA 仍然打開
     g->r.ch[kThrottle] = 1500;
-    g->run(2000);
+    g->run(3200);
     TEST_ASSERT_EQUAL(DriveState::DISARMED, g->fsm.state());   // 沒看過 SWA 關閉，不得重新解鎖
     g->r.ch[kArm] = 1000;
     g->run(100);
@@ -442,6 +442,141 @@ static void test_waiting_status_also_disarms() {
     g->r.st = RemoteStatus::WAITING;
     g->run(100);
     TEST_ASSERT_EQUAL(DriveState::DISARMED, g->fsm.state());
+}
+
+static void test_arming_and_both_disarm_paths_always_log_write_t_lines() {
+    for (bool stale : {false, true}) {
+        Rig g;
+        g.bootOnly();
+        g.link.setLogAll(false);  // 模擬先前為非取樣週期
+        g.unlockViaSwitch();
+        TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
+        const int arming = g.log.indexOf(",ARMING");
+        TEST_ASSERT_TRUE(arming >= 0);
+        const size_t start = static_cast<size_t>(arming);
+        const int mode = g.log.indexOf(",01,06,200D,1,OK,", start);
+        const int zero = g.log.indexOf(",01,10,2088,2,OK,", start);
+        const int enable = g.log.indexOf(",01,06,200E,1,OK,", start);
+        TEST_ASSERT_TRUE(arming < mode && mode < zero && zero < enable && enable < g.log.indexOf(",ARMED", start));
+        TEST_ASSERT_TRUE(g.log.lines[static_cast<size_t>(enable)].find("200E=0008") != std::string::npos);
+
+        g.link.setLogAll(false);
+        if (stale) g.r.st = RemoteStatus::STALE;
+        else g.r.ch[kArm] = 1000;
+        g.run(100);
+        TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+        const int disarming = g.log.indexOf(",DISARMING");
+        TEST_ASSERT_TRUE(disarming >= 0);
+        const size_t stopStart = static_cast<size_t>(disarming);
+        const int stopZero = g.log.indexOf(",01,10,2088,2,OK,", stopStart);
+        const int stop = g.log.indexOf(",01,06,200E,1,OK,", stopStart);
+        TEST_ASSERT_TRUE(disarming < stopZero && stopZero < stop && stop < g.log.indexOf(",DISARMED", stopStart));
+        for (int index : {zero, stopZero}) {
+            TEST_ASSERT_TRUE(g.log.lines[static_cast<size_t>(index)].find("2088=0000;2089=0000") != std::string::npos);
+        }
+        TEST_ASSERT_TRUE(g.log.lines[static_cast<size_t>(stop)].find("200E=0007") != std::string::npos);
+#ifdef DRIVE_DRYRUN
+        for (int index : {mode, zero, enable, stopZero, stop}) {
+            TEST_ASSERT_TRUE(g.log.lines[static_cast<size_t>(index)].find(",OK,0,-,") != std::string::npos);
+        }
+        TEST_ASSERT_TRUE(g.t.driveWrites.empty());
+#endif
+    }
+}
+
+static void test_stop_feedback_reads_60_blocks_and_reports_each_not_reached_once() {
+    auto g = armedRig();
+    g->d.actualVelL = 10;
+    g->d.actualVelR = -10;  // ±1.0 r/min 都尚未達嚴格門檻
+    g->r.ch[kArm] = 1000;
+    g->run(100);
+    const int disarming = g->log.indexOf(",DISARMING");
+    TEST_ASSERT_TRUE(disarming >= 0);
+    const int disarmed = g->log.indexOf(",DISARMED", static_cast<size_t>(disarming));
+    TEST_ASSERT_TRUE(disarmed > disarming);
+    const auto disarmedMs = std::stoul(g->log.lines[static_cast<size_t>(disarmed)].substr(2));
+    g->run(static_cast<uint32_t>(disarmedMs + 2900 - g->t.now));
+    TEST_ASSERT_FALSE(g->log.has("# STOP"));
+    g->run(300);
+
+    size_t count = 0;
+    for (size_t i = static_cast<size_t>(disarmed) + 1; i < g->log.lines.size(); ++i) {
+        const auto& line = g->log.lines[i];
+        if (line.find(",01,03,20AB,4,OK,") == std::string::npos) continue;
+        const auto elapsed = std::stoul(line.substr(2)) - disarmedMs;
+        TEST_ASSERT_EQUAL_UINT(count, elapsed / 50);
+        ++count;
+    }
+    TEST_ASSERT_EQUAL_UINT(60, count);
+    for (const char* decoded : {",actual_velocity_L,", ",actual_velocity_R,", ",actual_torque_L,", ",actual_torque_R,"}) {
+        unsigned samples = 0;
+        for (size_t i = static_cast<size_t>(disarmed) + 1; i < g->log.lines.size(); ++i) {
+            if (g->log.lines[i].find(decoded) != std::string::npos) ++samples;
+        }
+        TEST_ASSERT_EQUAL_UINT_MESSAGE(60, samples, decoded);
+    }
+    TEST_ASSERT_EQUAL_INT(1, g->log.count("# STOP L not_reached"));
+    TEST_ASSERT_EQUAL_INT(1, g->log.count("# STOP R not_reached"));
+}
+
+static void test_stop_feedback_records_first_threshold_crossing_and_blocks_rearming() {
+    auto g = armedRig();
+    g->d.actualVelL = 25;
+    g->d.actualVelR = -10;
+    g->r.ch[kArm] = 1000;
+    g->run(100);
+    const int disarming = g->log.indexOf(",DISARMING");
+    TEST_ASSERT_TRUE(disarming >= 0);
+    const int disarmed = g->log.indexOf(",DISARMED", static_cast<size_t>(disarming));
+    TEST_ASSERT_TRUE(disarmed > disarming);
+    const size_t start = static_cast<size_t>(disarmed);
+    const auto disarmingMs = std::stoul(g->log.lines[static_cast<size_t>(disarming)].substr(2));
+    const auto disarmedMs = std::stoul(g->log.lines[start].substr(2));
+    const size_t framesBeforeRearm = g->t.driveWrites.size();
+    g->r.ch[kArm] = 2000;
+    g->d.actualVelL = -9;
+    g->run(200);
+    TEST_ASSERT_TRUE(g->log.has("# STOP L ms="));
+    TEST_ASSERT_FALSE(g->log.has("# STOP R"));
+    g->d.actualVelR = 9;
+    g->run(200);
+    const char* const feedback[] = {",actual_velocity_L,-0.9,", ",actual_velocity_R,0.9,"};
+    for (int wheel = 0; wheel < 2; ++wheel) {
+        const int sample = g->log.indexOf(feedback[wheel], start);
+        TEST_ASSERT_TRUE(sample >= 0);
+        const auto sampleMs = std::stoul(g->log.lines[static_cast<size_t>(sample)].substr(2));
+        const std::string stop = std::string("# STOP ") + (wheel == 0 ? 'L' : 'R') + " ms=" +
+                                 std::to_string(sampleMs - disarmingMs);
+        TEST_ASSERT_TRUE(g->log.has(stop.c_str()));
+    }
+    g->run(static_cast<uint32_t>(disarmedMs + 2900 - g->t.now));
+    TEST_ASSERT_EQUAL(DriveState::DISARMED, g->fsm.state());
+    TEST_ASSERT_EQUAL_UINT(framesBeforeRearm, g->t.driveWrites.size());
+    TEST_ASSERT_EQUAL_INT(-1, g->log.indexOf(",ARMING", start));
+    g->run(180);
+    TEST_ASSERT_EQUAL(DriveState::ARMED, g->fsm.state());
+    TEST_ASSERT_EQUAL_INT(1, g->log.count("# STOP L"));
+    TEST_ASSERT_EQUAL_INT(1, g->log.count("# STOP R"));
+}
+
+static void test_stop_feedback_read_error_latches_with_no_further_requests() {
+    auto g = armedRig();
+    g->r.ch[kArm] = 1000;
+    g->run(100);
+    const auto mark = g->t.writes.size();
+    const auto driveMark = g->t.driveWrites.size();
+    g->d.dropReadAddrs = {0x20AB};
+    g->run(200);
+    TEST_ASSERT_EQUAL(DriveState::LATCHED, g->fsm.state());
+    TEST_ASSERT_EQUAL(FaultReason::COMM_ERROR, g->fsm.faultReason());
+    TEST_ASSERT_EQUAL_UINT(mark + 1, g->t.writes.size());
+    TEST_ASSERT_EQUAL_STRING("R20ABx4", describe(g->t.writes.back()).c_str());
+    TEST_ASSERT_EQUAL_UINT(driveMark, g->t.driveWrites.size());
+    g->d.dropReadAddrs.clear();
+    g->r.ch[kArm] = 2000;
+    g->run(4000);
+    TEST_ASSERT_EQUAL_UINT(mark + 1, g->t.writes.size());
+    TEST_ASSERT_FALSE(g->log.has("not_reached"));
 }
 
 #ifndef DRIVE_DRYRUN
@@ -844,9 +979,11 @@ static void test_steering_disarms_with_frozen_ch4_and_with_stale_then_rearms_fro
         if (stale) TEST_ASSERT_TRUE(g.log.has("# T2 STALE observed"));
 #ifdef DRIVE_DRYRUN
         const int stop = g.log.indexOf("# DRY W 01 06 20 0E 00 07", logMark);
-        TEST_ASSERT_TRUE(stop > 0);
-        TEST_ASSERT_TRUE(g.log.lines[static_cast<size_t>(stop) - 1].find("# DRY W 01 10 20 88 00 02 04 00 00 00 00") == 0);
-        TEST_ASSERT_EQUAL_UINT(frameMark, g.t.writes.size());
+        const int zero = g.log.indexOf("# DRY W 01 10 20 88 00 02 04 00 00 00 00", logMark);
+        TEST_ASSERT_TRUE(zero >= 0 && zero < stop);
+        for (size_t i = frameMark; i < g.t.writes.size(); ++i) {
+            TEST_ASSERT_EQUAL_STRING("R20ABx4", describe(g.t.writes[i]).c_str());
+        }
 #else
         expectPrefix(g, frameMark, {"S2088=0,0", "W200E=0007"});
 #endif
@@ -855,6 +992,7 @@ static void test_steering_disarms_with_frozen_ch4_and_with_stale_then_rearms_fro
         g.run(100);
         TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
         g.r.ch[kSteer] = 1500;
+        g.run(1900);  // 等停機後的取樣結束
         if (stale) {
             g.run(700);
             TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
@@ -1003,10 +1141,13 @@ static void test_dryrun_disarm_and_fault_paths_print_only() {
     TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
     TEST_ASSERT_TRUE(g.log.has("# DRY W 01 06 20 0E 00 07 A2 0B"));
     const int stopIdx = g.log.indexOf("# DRY W 01 06 20 0E 00 07 A2 0B");
-    TEST_ASSERT_TRUE_MESSAGE(stopIdx > 0 && g.log.lines[static_cast<size_t>(stopIdx) - 1].find("# DRY W 01 10 20 88 00 02 04 00 00 00 00") != std::string::npos,
+    const int disarming = g.log.indexOf(",DISARMING");
+    TEST_ASSERT_TRUE(disarming >= 0);
+    const int zeroIdx = g.log.indexOf("# DRY W 01 10 20 88 00 02 04 00 00 00 00", static_cast<size_t>(disarming));
+    TEST_ASSERT_TRUE_MESSAGE(zeroIdx >= 0 && zeroIdx < stopIdx,
                              "正常解除：先 2088h＝0,0 再 200Eh＝0x07");
     g.r.ch[kArm] = 2000;
-    g.run(700);
+    g.run(3200);
     TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
     g.d.dropAll = true;   // 讀取逾時仍會觸發故障路徑（通訊錯誤在 dryrun 也有效）
     g.run(100);
@@ -1060,6 +1201,10 @@ void run_fsm_tests() {
     RUN_TEST(test_arming_fails_when_status_not_enabled_afterwards);
 #endif
     RUN_TEST(test_waiting_status_also_disarms);
+    RUN_TEST(test_arming_and_both_disarm_paths_always_log_write_t_lines);
+    RUN_TEST(test_stop_feedback_reads_60_blocks_and_reports_each_not_reached_once);
+    RUN_TEST(test_stop_feedback_records_first_threshold_crossing_and_blocks_rearming);
+    RUN_TEST(test_stop_feedback_read_error_latches_with_no_further_requests);
 #ifndef DRIVE_DRYRUN
     RUN_TEST(test_driver_fault_left_or_right_stops);
     RUN_TEST(test_comm_timeout_stops);

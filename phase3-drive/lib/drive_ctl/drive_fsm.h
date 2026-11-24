@@ -1,5 +1,5 @@
 // 狀態機（DESIGN.md §4）：BOOT → DISARMED → ARMING → ARMED → DISARMING；任何故障 → FAULT_STOP → LATCHED。
-// ARMING、DISARMING、FAULT_STOP 是在一次 step() 內做完的序列，只留下 S 行記錄。
+// ARMING、DISARMING、FAULT_STOP 的交易序列在一次 step() 內執行。
 #pragma once
 #include "drive_link.h"
 #include "failsafe_monitor.h"
@@ -81,9 +81,14 @@ private:
     int statusNoteKey_ = -1;     // 20A2h 擋住（或 dryrun 放行）的訊息，各自記住上一次印過的狀態
     bool retryWait_ = false;     // 解鎖被驅動器狀態擋住後，等 blockRetryMs 才再讀
     uint32_t retryAt_ = 0;
+    bool stopSampling_ = false;
+    uint32_t disarmingAt_ = 0;
+    uint32_t disarmedAt_ = 0;
+    uint32_t nextStopSampleMs_ = 0;  // 相對於 DISARMED 的取樣時刻
+    bool stopReached_[2] = {};
 
     bool tickDue(uint32_t now);
-    void setState(DriveState s);
+    uint32_t setState(DriveState s);
     void disable(const char* reason);
     void note(int key, const char* text);
     void noteStatus(int key, const char* text);
@@ -96,6 +101,7 @@ private:
     void doArming(uint32_t now);
     void doArmed(uint32_t now);
     void doDisarm(bool armSwitchOff);
+    void sampleStop(uint32_t now);
     void doFault(FaultReason reason, uint32_t detail);
     void faultFromStatus(Status s);
     bool readOne(uint16_t addr, uint16_t& value);

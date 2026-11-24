@@ -13,6 +13,8 @@
 // 讀回的轉速（0.1 r/min，有號）換成「油門往上時為正」的方向：與寫入時的正負號成對（寫入 raw＝指令×sign，讀回 raw×sign＝指令方向）。
 inline int normalizedVelocity01(uint16_t raw, int sign) { return static_cast<int16_t>(raw) * sign; }
 
+enum class WriteLog { Normal, Always };
+
 class DriveLink {
 public:
     DriveLink(ITransport& transport, ILineSink& sink, uint8_t slaveId = kDriveSlaveId)
@@ -24,13 +26,14 @@ public:
     int16_t limitRaw() const { return guard_.limitRaw(); }
 
     // 讀取（FC 0x03，Phase 3 讀取白名單）。regs 至少要有 count 個位置。
-    Status read(uint16_t start, uint16_t count, uint16_t* regs, uint8_t attempts = kMaxAttempts);
+    Status read(uint16_t start, uint16_t count, uint16_t* regs, uint8_t attempts = kMaxAttempts,
+                uint32_t* receivedAt = nullptr);
 
     // 寫入（只有這四種）。emergency=true：即使已 LATCHED 也送出，只嘗試一次（緊急停止序列用）。
-    Status writeSpeedMode();
-    Status writeControl(uint16_t word, bool emergency = false);
+    Status writeSpeedMode(WriteLog log = WriteLog::Normal);
+    Status writeControl(uint16_t word, bool emergency = false, WriteLog log = WriteLog::Normal);
     Status writeOfflineTime(uint16_t ms);
-    Status writeSpeeds(int16_t left, int16_t right, bool emergency = false);
+    Status writeSpeeds(int16_t left, int16_t right, bool emergency = false, WriteLog log = WriteLog::Normal);
 
     // false：只記錄失敗的交易（ARMED 的高頻週期用，避免塞滿 Serial）。
     void setLogAll(bool on) { logAll_ = on; }
@@ -48,7 +51,8 @@ private:
     int leftSign_ = 1;
     int rightSign_ = 1;
 
-    Status sendWrite(const WriteFrame& f, uint16_t addr, uint16_t count, const uint16_t* values, bool emergency);
+    Status sendWrite(const WriteFrame& f, uint16_t addr, uint16_t count, const uint16_t* values, bool emergency,
+                     WriteLog log = WriteLog::Normal);
     void logT(uint8_t fc, uint16_t addr, uint16_t count, Status st, uint8_t attempts, uint32_t rtt, const uint16_t* values,
-              uint8_t nValues);
+              uint8_t nValues, bool always = false);
 };
