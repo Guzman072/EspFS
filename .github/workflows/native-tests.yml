@@ -1,0 +1,39 @@
+name: Native tests
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  native-tests:
+    name: ${{ matrix.project }} / ${{ matrix.environment }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: phase2-modbus
+            environment: native
+          - project: phase3-drive
+            environment: native
+          - project: phase3-drive
+            environment: native_dryrun
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: .github/workflows/native-tests.yml
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-${{ runner.arch }}-pio-${{ matrix.project }}-${{ matrix.environment }}-${{ hashFiles('.github/workflows/native-tests.yml', 'phase2-modbus/platformio.ini', 'phase3-drive/platformio.ini') }}
+      - name: Install PlatformIO
+        run: python -m pip install platformio
+      - name: Run native tests
+        working-directory: ${{ matrix.project }}
+        run: pio test -e ${{ matrix.environment }}
