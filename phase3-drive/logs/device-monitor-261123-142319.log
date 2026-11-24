@@ -1,0 +1,1094 @@
+R,84880,RECEIVING,3,2351,1504,1000
+# T2 stale_seen=0 frame_age_ms=7 values_unchanged_ms=3002
+R,85880,RECEIVING,2,3351,1504,1000
+R,86880,RECEIVING,1,4351,1504,1000
+R,87880,RECEIVING,0,5351,1504,1000
+R,88880,RECEIVING,6,6351,1504,1000
+R,89880,RECEIVING,5,129,1504,1000
+# T2 stale_seen=0 frame_age_ms=2 values_unchanged_ms=780
+R,90880,RECEIVING,4,1129,1504,1000
+R,91880,RECEIVING,4,743,1504,1000
+R,92880,RECEIVING,3,1743,1504,1000
+R,93880,RECEIVING,2,63,1504,1000
+R,94880,RECEIVING,1,1063,1504,1000
+# T2 stale_seen=0 frame_age_ms=5 values_unchanged_ms=1714
+R,95880,RECEIVING,0,2063,1504,1000
+T,96088,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96088,error_code_L,512,bits
+D,96088,error_code_R,512,bits
+T,96097,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96097,motor_state_L,192,state
+D,96097,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96139,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96139,error_code_L,512,bits
+D,96139,error_code_R,512,bits
+T,96148,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96148,motor_state_L,192,state
+D,96148,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96188,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96188,error_code_L,512,bits
+D,96188,error_code_R,512,bits
+T,96197,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96197,motor_state_L,192,state
+D,96197,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96238,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96238,error_code_L,512,bits
+D,96238,error_code_R,512,bits
+T,96247,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96247,motor_state_L,192,state
+D,96247,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96288,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96288,error_code_L,512,bits
+D,96288,error_code_R,512,bits
+T,96297,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96297,motor_state_L,192,state
+D,96297,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96339,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,96339,error_code_L,512,bits
+D,96339,error_code_R,512,bits
+T,96348,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96348,motor_state_L,192,state
+D,96348,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96388,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96388,error_code_L,512,bits
+D,96388,error_code_R,512,bits
+T,96397,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96397,motor_state_L,192,state
+D,96397,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96438,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96438,error_code_L,512,bits
+D,96438,error_code_R,512,bits
+T,96447,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96447,motor_state_L,192,state
+D,96447,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96488,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96488,error_code_L,512,bits
+D,96488,error_code_R,512,bits
+T,96497,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96497,motor_state_L,192,state
+D,96497,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96539,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96539,error_code_L,512,bits
+D,96539,error_code_R,512,bits
+T,96548,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96548,motor_state_L,192,state
+D,96548,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96589,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,96589,error_code_L,512,bits
+D,96589,error_code_R,512,bits
+T,96598,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96598,motor_state_L,192,state
+D,96598,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96638,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96638,error_code_L,512,bits
+D,96638,error_code_R,512,bits
+T,96647,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96647,motor_state_L,192,state
+D,96647,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96688,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96688,error_code_L,512,bits
+D,96688,error_code_R,512,bits
+T,96697,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96697,motor_state_L,192,state
+D,96697,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96738,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96738,error_code_L,512,bits
+D,96738,error_code_R,512,bits
+T,96747,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96747,motor_state_L,192,state
+D,96747,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96788,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96788,error_code_L,512,bits
+D,96788,error_code_R,512,bits
+T,96797,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96797,motor_state_L,192,state
+D,96797,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96839,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,96839,error_code_L,512,bits
+D,96839,error_code_R,512,bits
+T,96848,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,96848,motor_state_L,192,state
+D,96848,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+R,96880,RECEIVING,7,267,1504,2000
+T,96888,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96888,error_code_L,512,bits
+D,96888,error_code_R,512,bits
+T,96897,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96897,motor_state_L,192,state
+D,96897,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96938,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,96938,error_code_L,512,bits
+D,96938,error_code_R,512,bits
+T,96947,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96947,motor_state_L,192,state
+D,96947,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,96989,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,96989,error_code_L,512,bits
+D,96989,error_code_R,512,bits
+T,96998,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,96998,motor_state_L,192,state
+D,96998,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97038,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97038,error_code_L,512,bits
+D,97038,error_code_R,512,bits
+T,97047,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97047,motor_state_L,192,state
+D,97047,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97088,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97088,error_code_L,512,bits
+D,97088,error_code_R,512,bits
+T,97097,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97097,motor_state_L,192,state
+D,97097,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97138,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97138,error_code_L,512,bits
+D,97138,error_code_R,512,bits
+T,97147,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97147,motor_state_L,192,state
+D,97147,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97189,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,97189,error_code_L,512,bits
+D,97189,error_code_R,512,bits
+T,97198,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97198,motor_state_L,192,state
+D,97198,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97239,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,97239,error_code_L,512,bits
+D,97239,error_code_R,512,bits
+T,97248,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97248,motor_state_L,192,state
+D,97248,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97288,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97288,error_code_L,512,bits
+D,97288,error_code_R,512,bits
+T,97297,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97297,motor_state_L,192,state
+D,97297,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97338,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97338,error_code_L,512,bits
+D,97338,error_code_R,512,bits
+T,97347,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97347,motor_state_L,192,state
+D,97347,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97388,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97388,error_code_L,512,bits
+D,97388,error_code_R,512,bits
+T,97397,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97397,motor_state_L,192,state
+D,97397,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97438,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97438,error_code_L,512,bits
+D,97438,error_code_R,512,bits
+T,97447,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97447,motor_state_L,192,state
+D,97447,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97489,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,97489,error_code_L,512,bits
+D,97489,error_code_R,512,bits
+T,97498,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97498,motor_state_L,192,state
+D,97498,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97538,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97538,error_code_L,512,bits
+D,97538,error_code_R,512,bits
+T,97547,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97547,motor_state_L,192,state
+D,97547,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97589,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,97589,error_code_L,512,bits
+D,97589,error_code_R,512,bits
+T,97598,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97598,motor_state_L,192,state
+D,97598,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97638,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97638,error_code_L,512,bits
+D,97638,error_code_R,512,bits
+T,97647,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97647,motor_state_L,192,state
+D,97647,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97688,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97688,error_code_L,512,bits
+D,97688,error_code_R,512,bits
+T,97697,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97697,motor_state_L,192,state
+D,97697,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97738,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97738,error_code_L,512,bits
+D,97738,error_code_R,512,bits
+T,97747,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97747,motor_state_L,192,state
+D,97747,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97789,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,97789,error_code_L,512,bits
+D,97789,error_code_R,512,bits
+T,97798,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97798,motor_state_L,192,state
+D,97798,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,97838,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,97838,error_code_L,512,bits
+D,97838,error_code_R,512,bits
+T,97847,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,97847,motor_state_L,192,state
+D,97847,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+R,97880,RECEIVING,6,13,1504,1000
+R,98880,RECEIVING,5,790,1504,1000
+R,99880,RECEIVING,4,496,1504,1000
+# T2 stale_seen=0 frame_age_ms=0 values_unchanged_ms=401
+R,100880,RECEIVING,3,750,1504,1000
+T,100938,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,100938,error_code_L,512,bits
+D,100938,error_code_R,512,bits
+T,100947,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,100947,motor_state_L,192,state
+D,100947,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,100988,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,100988,error_code_L,512,bits
+D,100988,error_code_R,512,bits
+T,100997,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,100997,motor_state_L,192,state
+D,100997,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101039,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,101039,error_code_L,512,bits
+D,101039,error_code_R,512,bits
+T,101048,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101048,motor_state_L,192,state
+D,101048,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101089,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,101089,error_code_L,512,bits
+D,101089,error_code_R,512,bits
+T,101098,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101098,motor_state_L,192,state
+D,101098,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101138,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101138,error_code_L,512,bits
+D,101138,error_code_R,512,bits
+T,101147,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101147,motor_state_L,192,state
+D,101147,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101188,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101188,error_code_L,512,bits
+D,101188,error_code_R,512,bits
+T,101197,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101197,motor_state_L,192,state
+D,101197,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101238,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101238,error_code_L,512,bits
+D,101238,error_code_R,512,bits
+T,101247,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101247,motor_state_L,192,state
+D,101247,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101288,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101288,error_code_L,512,bits
+D,101288,error_code_R,512,bits
+T,101297,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101297,motor_state_L,192,state
+D,101297,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101338,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101338,error_code_L,512,bits
+D,101338,error_code_R,512,bits
+T,101347,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101347,motor_state_L,192,state
+D,101347,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101389,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,101389,error_code_L,512,bits
+D,101389,error_code_R,512,bits
+T,101398,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101398,motor_state_L,192,state
+D,101398,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101438,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101438,error_code_L,512,bits
+D,101438,error_code_R,512,bits
+T,101447,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101447,motor_state_L,192,state
+D,101447,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101488,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101488,error_code_L,512,bits
+D,101488,error_code_R,512,bits
+T,101497,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101497,motor_state_L,192,state
+D,101497,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101539,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,101539,error_code_L,512,bits
+D,101539,error_code_R,512,bits
+T,101548,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101548,motor_state_L,192,state
+D,101548,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101588,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101588,error_code_L,512,bits
+D,101588,error_code_R,512,bits
+T,101597,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101597,motor_state_L,192,state
+D,101597,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101639,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,101639,error_code_L,512,bits
+D,101639,error_code_R,512,bits
+T,101648,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101648,motor_state_L,192,state
+D,101648,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101688,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101688,error_code_L,512,bits
+D,101688,error_code_R,512,bits
+T,101697,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101697,motor_state_L,192,state
+D,101697,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101739,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,101739,error_code_L,512,bits
+D,101739,error_code_R,512,bits
+T,101748,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101748,motor_state_L,192,state
+D,101748,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101789,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,101789,error_code_L,512,bits
+D,101789,error_code_R,512,bits
+T,101798,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101798,motor_state_L,192,state
+D,101798,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101838,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101838,error_code_L,512,bits
+D,101838,error_code_R,512,bits
+T,101847,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101847,motor_state_L,192,state
+D,101847,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+R,101880,RECEIVING,2,980,1504,2000
+T,101888,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101888,error_code_L,512,bits
+D,101888,error_code_R,512,bits
+T,101897,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101897,motor_state_L,192,state
+D,101897,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,101938,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,101938,error_code_L,512,bits
+D,101938,error_code_R,512,bits
+T,101947,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,101947,motor_state_L,192,state
+D,101947,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+R,102880,RECEIVING,1,47,1504,1000
+R,103880,RECEIVING,0,0,1504,1000
+R,104880,RECEIVING,7,992,1504,1000
+# T2 stale_seen=0 frame_age_ms=3 values_unchanged_ms=42
+R,105880,RECEIVING,6,391,1504,1000
+R,106880,RECEIVING,5,590,1504,1000
+R,107880,RECEIVING,4,27,1504,1000
+R,108880,RECEIVING,3,388,1504,1000
+T,109339,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109339,error_code_L,512,bits
+D,109339,error_code_R,512,bits
+T,109348,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109348,motor_state_L,192,state
+D,109348,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109389,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109389,error_code_L,512,bits
+D,109389,error_code_R,512,bits
+T,109398,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109398,motor_state_L,192,state
+D,109398,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109439,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109439,error_code_L,512,bits
+D,109439,error_code_R,512,bits
+T,109448,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109448,motor_state_L,192,state
+D,109448,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109489,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,109489,error_code_L,512,bits
+D,109489,error_code_R,512,bits
+T,109498,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109498,motor_state_L,192,state
+D,109498,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109539,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109539,error_code_L,512,bits
+D,109539,error_code_R,512,bits
+T,109548,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109548,motor_state_L,192,state
+D,109548,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109589,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109589,error_code_L,512,bits
+D,109589,error_code_R,512,bits
+T,109598,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109598,motor_state_L,192,state
+D,109598,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109639,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109639,error_code_L,512,bits
+D,109639,error_code_R,512,bits
+T,109648,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109648,motor_state_L,192,state
+D,109648,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109689,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109689,error_code_L,512,bits
+D,109689,error_code_R,512,bits
+T,109698,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109698,motor_state_L,192,state
+D,109698,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109739,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109739,error_code_L,512,bits
+D,109739,error_code_R,512,bits
+T,109748,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109748,motor_state_L,192,state
+D,109748,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109789,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109789,error_code_L,512,bits
+D,109789,error_code_R,512,bits
+T,109798,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109798,motor_state_L,192,state
+D,109798,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109839,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109839,error_code_L,512,bits
+D,109839,error_code_R,512,bits
+T,109848,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109848,motor_state_L,192,state
+D,109848,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+R,109880,RECEIVING,2,579,1504,2000
+T,109889,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109889,error_code_L,512,bits
+D,109889,error_code_R,512,bits
+T,109898,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109898,motor_state_L,192,state
+D,109898,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109939,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109939,error_code_L,512,bits
+D,109939,error_code_R,512,bits
+T,109948,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109948,motor_state_L,192,state
+D,109948,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,109989,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,109989,error_code_L,512,bits
+D,109989,error_code_R,512,bits
+T,109998,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,109998,motor_state_L,192,state
+D,109998,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110039,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110039,error_code_L,512,bits
+D,110039,error_code_R,512,bits
+T,110048,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110048,motor_state_L,192,state
+D,110048,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110089,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110089,error_code_L,512,bits
+D,110089,error_code_R,512,bits
+T,110098,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110098,motor_state_L,192,state
+D,110098,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110139,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110139,error_code_L,512,bits
+D,110139,error_code_R,512,bits
+T,110148,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110148,motor_state_L,192,state
+D,110148,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110189,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110189,error_code_L,512,bits
+D,110189,error_code_R,512,bits
+T,110198,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110198,motor_state_L,192,state
+D,110198,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110239,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110239,error_code_L,512,bits
+D,110239,error_code_R,512,bits
+T,110248,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110248,motor_state_L,192,state
+D,110248,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110289,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110289,error_code_L,512,bits
+D,110289,error_code_R,512,bits
+T,110298,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110298,motor_state_L,192,state
+D,110298,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110339,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110339,error_code_L,512,bits
+D,110339,error_code_R,512,bits
+T,110348,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110348,motor_state_L,192,state
+D,110348,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110389,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110389,error_code_L,512,bits
+D,110389,error_code_R,512,bits
+T,110398,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110398,motor_state_L,192,state
+D,110398,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110439,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110439,error_code_L,512,bits
+D,110439,error_code_R,512,bits
+T,110448,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110448,motor_state_L,192,state
+D,110448,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110489,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110489,error_code_L,512,bits
+D,110489,error_code_R,512,bits
+T,110498,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110498,motor_state_L,192,state
+D,110498,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110539,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110539,error_code_L,512,bits
+D,110539,error_code_R,512,bits
+T,110548,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110548,motor_state_L,192,state
+D,110548,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+# T2 stale_seen=0 frame_age_ms=0 values_unchanged_ms=1261
+T,110590,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110590,error_code_L,512,bits
+D,110590,error_code_R,512,bits
+T,110599,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110599,motor_state_L,192,state
+D,110599,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110639,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110639,error_code_L,512,bits
+D,110639,error_code_R,512,bits
+T,110648,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110648,motor_state_L,192,state
+D,110648,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110690,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110690,error_code_L,512,bits
+D,110690,error_code_R,512,bits
+T,110699,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,110699,motor_state_L,192,state
+D,110699,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110739,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,110739,error_code_L,512,bits
+D,110739,error_code_R,512,bits
+T,110748,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110748,motor_state_L,192,state
+D,110748,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110790,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110790,error_code_L,512,bits
+D,110790,error_code_R,512,bits
+T,110799,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110799,motor_state_L,192,state
+D,110799,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,110839,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110839,error_code_L,512,bits
+D,110839,error_code_R,512,bits
+T,110848,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110848,motor_state_L,192,state
+D,110848,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+R,110880,RECEIVING,7,1579,1504,2000
+T,110889,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,110889,error_code_L,512,bits
+D,110889,error_code_R,512,bits
+T,110898,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,110898,motor_state_L,192,state
+D,110898,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+R,111880,RECEIVING,6,953,1504,1000
+R,112880,RECEIVING,5,1953,1504,1000
+R,113880,RECEIVING,4,2953,1504,1000
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,531,BOOT
+T,540,01,03,20A0,1,OK,1,3,20A0=65C9
+D,541,sw_version,26057,raw
+T,549,01,03,2022,1,OK,1,4,2022=0001
+D,549,speed_resolution,1,div
+T,558,01,03,2008,1,OK,1,4,2008=03E8
+D,558,max_rpm,1000,r/min
+T,567,01,03,2000,1,OK,1,4,2000=0000
+D,567,comm_offline_ms,0,ms
+T,576,01,03,200F,1,OK,1,4,200F=0001
+D,576,sync_flag,1,flag
+T,585,01,03,2007,1,OK,1,4,2007=0000
+D,585,power_on_lock_mode,0,mode
+T,594,01,03,2011,1,OK,1,3,2011=0005
+D,594,quick_stop_code,5,code
+T,603,01,03,2023,1,OK,1,4,2023=0000
+D,603,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,613,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,613,error_code_L,512,bits
+D,613,error_code_R,512,bits
+T,622,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,622,motor_state_L,192,state
+D,622,motor_state_R,192,state
+S,622,DISARMED
+R,756,RECEIVING,0,0,1504,1000
+R,1756,RECEIVING,4,1000,1504,1000
+R,2756,RECEIVING,3,2000,1504,1000
+R,3756,RECEIVING,2,3000,1504,1000
+R,4756,RECEIVING,1,4000,1504,1000
+# T2 stale_seen=0 frame_age_ms=6 values_unchanged_ms=4775
+R,5756,RECEIVING,0,5000,1504,1000
+R,6756,RECEIVING,7,6000,1504,1000
+R,7756,RECEIVING,5,7000,1504,1000
+R,8756,RECEIVING,4,8000,1504,1000
+R,9756,RECEIVING,3,111,1503,1000
+# T2 stale_seen=0 frame_age_ms=0 values_unchanged_ms=347
+R,10756,RECEIVING,2,572,1504,1000
+R,11756,RECEIVING,1,1572,1504,1000
+R,12756,RECEIVING,0,2572,1504,1000
+R,13756,RECEIVING,7,3572,1504,1000
+R,14756,RECEIVING,6,160,1504,1000
+# T2 stale_seen=0 frame_age_ms=3 values_unchanged_ms=935
+R,15756,RECEIVING,5,1160,1504,1000
+R,16756,RECEIVING,4,2160,1504,1000
+R,17756,RECEIVING,3,103,1504,1000
+R,18756,RECEIVING,2,1103,1504,1000
+R,19756,RECEIVING,1,225,1504,1000
+# T2 stale_seen=0 frame_age_ms=6 values_unchanged_ms=183
+R,20756,RECEIVING,0,0,1587,1000
+R,21756,RECEIVING,7,7,1697,1000
+R,22756,RECEIVING,6,83,1759,1000
+R,23756,RECEIVING,5,5,1800,1000
+R,24756,RECEIVING,4,12,1857,1000
+# T2 stale_seen=0 frame_age_ms=2 values_unchanged_ms=2
+R,25756,RECEIVING,3,3,1949,1000
+R,26756,RECEIVING,2,79,1963,1000
+R,27756,RECEIVING,1,40,1994,1000
+R,28756,RECEIVING,0,16,1998,1000
+R,29756,RECEIVING,7,192,2000,1000
+# T2 stale_seen=0 frame_age_ms=5 values_unchanged_ms=5
+R,30756,RECEIVING,6,6,1588,1000
+R,31756,RECEIVING,5,914,1504,1000
+R,32756,RECEIVING,4,120,1503,1000
+R,33756,RECEIVING,3,11,1085,1000
+R,34756,RECEIVING,2,118,1504,1000
+# T2 stale_seen=0 frame_age_ms=0 values_unchanged_ms=108
+R,35756,RECEIVING,1,333,1504,1000
+R,36756,RECEIVING,1,385,1504,1000
+R,37756,RECEIVING,0,546,1504,1000
+R,38756,RECEIVING,6,53,1504,1000
+R,39756,RECEIVING,5,390,1506,1000
+# T2 stale_seen=0 frame_age_ms=3 values_unchanged_ms=41
+R,40756,RECEIVING,4,266,1504,1000
+R,41756,RECEIVING,4,234,1504,1000
+R,42756,RECEIVING,3,372,1504,1000
+R,43756,RECEIVING,2,240,1503,1000
+R,44756,RECEIVING,1,1240,1503,1000
+# T2 stale_seen=0 frame_age_ms=6 values_unchanged_ms=2015
+R,45756,RECEIVING,0,92,1503,1000
+R,46756,RECEIVING,6,1092,1503,1000
+R,47756,RECEIVING,6,2092,1503,1000
+R,48756,RECEIVING,5,51,1502,1000
+R,49756,RECEIVING,4,34,1504,1000
+# T2 stale_seen=0 frame_age_ms=1 values_unchanged_ms=809
+R,50756,RECEIVING,3,1034,1504,1000
+R,51756,RECEIVING,2,487,1504,1000
+R,52756,RECEIVING,1,32,1504,1000
+R,53756,RECEIVING,0,15,1504,1000
+R,54756,RECEIVING,7,14,1505,1000
+# T2 stale_seen=0 frame_age_ms=4 values_unchanged_ms=474
+R,55756,RECEIVING,6,699,1504,1000
+R,56756,RECEIVING,5,482,1504,1000
+R,57756,RECEIVING,4,1482,1504,1000
+R,58756,RECEIVING,3,2482,1504,1000
+R,59756,RECEIVING,2,3482,1504,1000
+# T2 stale_seen=0 frame_age_ms=7 values_unchanged_ms=4257
+R,60756,RECEIVING,1,4482,1504,1000
+R,61756,RECEIVING,0,462,1504,1000
+R,62756,RECEIVING,7,7,1504,1000
+R,63756,RECEIVING,6,645,1504,1000
+R,64756,RECEIVING,5,1645,1504,1000
+# T2 stale_seen=0 frame_age_ms=2 values_unchanged_ms=2420
+R,65756,RECEIVING,4,12,1504,1000
+R,66756,RECEIVING,3,11,1504,1000
+T,67215,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,67215,error_code_L,512,bits
+D,67215,error_code_R,512,bits
+T,67224,01,03,20A2,1,OK,1,4,20A2=C0C0
+D,67224,motor_state_L,192,state
+D,67224,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,67265,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,67265,error_code_L,512,bits
+D,67265,error_code_R,512,bits
+T,67274,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,67274,motor_state_L,192,state
+D,67274,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,67315,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,67315,error_code_L,512,bits
+D,67315,error_code_R,512,bits
+T,67324,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,67324,motor_state_L,192,state
+D,67324,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,67365,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,67365,error_code_L,512,bits
+D,67365,error_code_R,512,bits
+T,67374,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,67374,motor_state_L,192,state
+D,67374,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,67415,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,67415,error_code_L,512,bits
+D,67415,error_code_R,512,bits
+T,67424,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,67424,motor_state_L,192,state
+D,67424,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,67464,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,67464,error_code_L,512,bits
+D,67464,error_code_R,512,bits
+T,67473,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,67473,motor_state_L,192,state
+D,67473,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,67515,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,67515,error_code_L,512,bits
+D,67515,error_code_R,512,bits
+T,67524,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,67524,motor_state_L,192,state
+D,67524,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,67565,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,67565,error_code_L,512,bits
+D,67565,error_code_R,512,bits
+T,67574,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,67574,motor_state_L,192,state
+D,67574,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,67615,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,67615,error_code_L,512,bits
+D,67615,error_code_R,512,bits
+T,67624,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,67624,motor_state_L,192,state
+D,67624,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,67665,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,67665,error_code_L,512,bits
+D,67665,error_code_R,512,bits
+T,67674,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,67674,motor_state_L,192,state
+D,67674,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+T,67714,01,03,20A5,2,OK,1,4,20A5=0200;20A6=0200
+D,67714,error_code_L,512,bits
+D,67714,error_code_R,512,bits
+T,67723,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,67723,motor_state_L,192,state
+D,67723,motor_state_R,192,state
+# would-block: fault 0x0200
+# ARM blocked: driver already enabled (20A2h)
+R,67756,RECEIVING,2,2,1504,1000
+R,68756,RECEIVING,1,16,1504,1000
+R,69756,RECEIVING,0,0,1504,1000
+# T2 stale_seen=0 frame_age_ms=5 values_unchanged_ms=5
+R,70756,RECEIVING,7,68,1504,1000
+R,71756,RECEIVING,6,14,1504,1000
+R,72756,RECEIVING,5,28,1504,1000
+R,73756,RECEIVING,4,12,1504,1000
+R,74756,RECEIVING,3,34,1504,1000
+# T2 stale_seen=0 frame_age_ms=0 values_unchanged_ms=23
+R,75756,RECEIVING,2,18,1504,1000
+R,76756,RECEIVING,1,24,1504,1000
+R,77756,RECEIVING,0,0,1504,1000
+R,78756,RECEIVING,7,15,1637,1000
+R,79756,RECEIVING,6,21,1996,1000
+# T2 stale_seen=0 frame_age_ms=3 values_unchanged_ms=11
+R,80756,RECEIVING,5,13,1997,1000
+R,81756,RECEIVING,4,27,1997,1000
+R,82756,RECEIVING,3,3,1997,1000
+R,83756,RECEIVING,2,125,2000,1000
+R,84756,RECEIVING,0,62,1504,1000
+# T2 stale_seen=0 frame_age_ms=5 values_unchanged_ms=837
+R,85756,RECEIVING,7,1062,1504,1000
+R,86756,RECEIVING,6,2062,1504,1000
+R,87756,RECEIVING,5,3062,1504,1000
+R,88756,RECEIVING,4,4062,1504,1000
+R,89756,RECEIVING,3,5062,1504,1000
+# T2 stale_seen=0 frame_age_ms=0 values_unchanged_ms=5837
+R,90756,RECEIVING,2,6062,1504,1000
+R,91756,RECEIVING,1,7062,1504,1000
+R,92756,RECEIVING,5,28,1504,1000
+R,93756,RECEIVING,4,19,1504,1000
+R,94756,RECEIVING,3,3,1504,1000
+# T2 stale_seen=0 frame_age_ms=0 values_unchanged_ms=16
+R,95756,RECEIVING,2,17,1504,1000
+R,96756,RECEIVING,1,32,1504,1000
+R,97756,RECEIVING,0,69,1504,1000
+R,98756,RECEIVING,7,7,1504,1000
+R,99756,RECEIVING,6,6,1504,1000
+# T2 stale_seen=0 frame_age_ms=3 values_unchanged_ms=26
+R,100756,RECEIVING,5,13,1504,1000
+R,101756,RECEIVING,4,27,1504,1000
+R,102756,RECEIVING,3,3,1504,1000
+R,103756,RECEIVING,2,2,1504,1000
+R,104756,RECEIVING,1,40,1504,1000
+# T2 stale_seen=0 frame_age_ms=6 values_unchanged_ms=37
+R,105756,RECEIVING,0,0,1504,1000
+R,106756,RECEIVING,7,69,1504,1000
+R,107756,RECEIVING,6,21,1504,1000
+R,108756,RECEIVING,5,20,1504,1000
+R,109756,RECEIVING,4,19,2000,1000
+# T2 stale_seen=0 frame_age_ms=1 values_unchanged_ms=1
+R,110756,RECEIVING,3,11,2000,1000
+R,111756,RECEIVING,2,487,2000,1000
+R,112756,RECEIVING,0,346,1504,1000
+R,113756,RECEIVING,7,1346,1504,1000
+R,114756,RECEIVING,6,2346,1504,1000
+# T2 stale_seen=0 frame_age_ms=3 values_unchanged_ms=3121
+R,115756,RECEIVING,5,3346,1504,1000
+R,116756,RECEIVING,4,4346,1504,1000
+R,117756,RECEIVING,0,15,1504,1000
+R,118756,RECEIVING,6,29,1504,1000
+R,119756,RECEIVING,5,5,1504,1000
+# T2 stale_seen=0 frame_age_ms=3 values_unchanged_ms=18
+R,120756,RECEIVING,5,5,1504,1000
+R,121756,RECEIVING,4,4,1504,1000
+R,122756,RECEIVING,3,49,1504,1000
+R,123756,RECEIVING,2,9,1504,1000
+R,124756,RECEIVING,1,1,1504,1000
+# T2 stale_seen=0 frame_age_ms=6 values_unchanged_ms=6
+R,125756,RECEIVING,0,46,1504,1000
+R,126756,RECEIVING,7,7,1504,1000
+R,127756,RECEIVING,6,6,1504,1000
+R,128756,RECEIVING,5,28,1504,1000
+R,129756,RECEIVING,4,4,1504,1000
+# T2 stale_seen=0 frame_age_ms=1 values_unchanged_ms=16
+R,130756,RECEIVING,3,10,1504,1000
+R,131756,RECEIVING,2,2,1504,1000
+R,132756,RECEIVING,1,9,1504,1000
+R,133756,RECEIVING,0,8,1504,1000
+R,134756,RECEIVING,7,76,1504,1000
+# T2 stale_seen=0 frame_age_ms=4 values_unchanged_ms=19
+R,135756,RECEIVING,6,44,1504,1000
+R,136756,RECEIVING,5,5,1504,1000
+R,137756,RECEIVING,4,42,1504,1000
+R,138756,RECEIVING,3,49,1504,1000
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,531,BOOT
+T,540,01,03,20A0,1,OK,1,3,20A0=65C9
+D,541,sw_version,26057,raw
+T,549,01,03,2022,1,OK,1,3,2022=0001
+D,549,speed_resolution,1,div
+T,558,01,03,2008,1,OK,1,4,2008=03E8
+D,558,max_rpm,1000,r/min
+T,567,01,03,2000,1,OK,1,4,2000=0000
+D,567,comm_offline_ms,0,ms
+T,576,01,03,200F,1,OK,1,4,200F=0001
+D,576,sync_flag,1,flag
+T,585,01,03,2007,1,OK,1,4,2007=0000
+D,585,power_on_lock_mode,0,mode
+T,594,01,03,2011,1,OK,1,3,2011=0005
+D,594,quick_stop_code,5,code
+T,603,01,03,2023,1,OK,1,3,2023=0000
+D,603,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,613,01,03,20A5,2,OK,1,5,20A5=0200;20A6=0200
+D,613,error_code_L,512,bits
+D,613,error_code_R,512,bits
+T,622,01,03,20A2,1,OK,1,3,20A2=C0C0
+D,622,motor_state_L,192,state
+D,622,motor_state_R,192,state
+S,622,DISARMED
+R,1585,WAITING,1054,1054,0,0
+R,1595,RECEIVING,0,0,1504,1000
+R,2595,RECEIVING,7,15,1504,1000
+R,3595,RECEIVING,6,52,1504,1000
+R,4595,RECEIVING,5,5,1504,1000
+# T2 stale_seen=0 frame_age_ms=2 values_unchanged_ms=71
+R,5595,RECEIVING,4,12,1504,1000
+R,6595,RECEIVING,3,42,1504,1000
+R,7595,RECEIVING,2,18,1504,1000
+R,8595,RECEIVING,1,1,1504,1000
+R,9595,RECEIVING,1,8,1504,1000
+# T2 stale_seen=0 frame_age_ms=5 values_unchanged_ms=5
+R,10595,RECEIVING,0,0,1504,1000
+R,11595,RECEIVING,6,53,1504,1000
+R,12595,RECEIVING,5,152,1504,1000
+R,13595,RECEIVING,4,20,1504,1000
+R,14595,RECEIVING,4,19,1504,1000
+# T2 stale_seen=0 frame_age_ms=0 values_unchanged_ms=0
+R,15595,RECEIVING,3,18,1504,1000
+R,16595,RECEIVING,2,71,1504,1000
