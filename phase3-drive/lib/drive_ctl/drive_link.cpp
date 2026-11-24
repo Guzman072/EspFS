@@ -37,8 +37,8 @@ private:
 }  // namespace
 
 void DriveLink::logT(uint8_t fc, uint16_t addr, uint16_t count, Status st, uint8_t attempts, uint32_t rtt,
-                     const uint16_t* values, uint8_t nValues) {
-    if (!logAll_ && st == Status::OK) return;
+                     const uint16_t* values, uint8_t nValues, bool always) {
+    if (!always && !logAll_ && st == Status::OK) return;
     TLine l{};
     l.ms = t_.nowMs();
     l.slave = slave_;
@@ -55,7 +55,7 @@ void DriveLink::logT(uint8_t fc, uint16_t addr, uint16_t count, Status st, uint8
     out_.line(line);
 }
 
-Status DriveLink::read(uint16_t start, uint16_t count, uint16_t* regs, uint8_t attempts) {
+Status DriveLink::read(uint16_t start, uint16_t count, uint16_t* regs, uint8_t attempts, uint32_t* receivedAt) {
     if (tx_.latched()) return tx_.latchReason();
     Request rq;
     Status built = buildDriveRead(slave_, start, count, rq);
@@ -70,6 +70,7 @@ Status DriveLink::read(uint16_t start, uint16_t count, uint16_t* regs, uint8_t a
     TxOutcome o;
     tx_.run(spec, handler, o);
     if (o.status == Status::OK) {
+        if (receivedAt) *receivedAt = t_.nowMs();
         std::memcpy(regs, resp.regs, sizeof(uint16_t) * count);
         logT(kFcReadRegisters, start, count, o.status, o.attempts, o.rttMs, regs, static_cast<uint8_t>(count));
         if (logAll_) {
@@ -91,7 +92,8 @@ Status DriveLink::read(uint16_t start, uint16_t count, uint16_t* regs, uint8_t a
     return o.status;
 }
 
-Status DriveLink::sendWrite(const WriteFrame& f, uint16_t addr, uint16_t count, const uint16_t* values, bool emergency) {
+Status DriveLink::sendWrite(const WriteFrame& f, uint16_t addr, uint16_t count, const uint16_t* values, bool emergency,
+                            WriteLog log) {
     if (tx_.latched() && !emergency) return tx_.latchReason();
 #ifdef DRIVE_DRYRUN
     // 乾跑：寫入只印出，不呼叫任何寫入傳輸。仍先過寫入 guard，被拒絕的處置與正式環境相同。
@@ -105,6 +107,10 @@ Status DriveLink::sendWrite(const WriteFrame& f, uint16_t addr, uint16_t count, 
     size_t n = std::strlen(line);
     for (size_t i = 0; i < f.len && n + 4 < sizeof line; ++i) n += static_cast<size_t>(std::snprintf(line + n, sizeof line - n, " %02X", f.bytes[i]));
     out_.line(line);
+    if (log == WriteLog::Always) {
+        // OK 表示 guard 通過，0 次嘗試及無 RTT 表示未傳送。
+        logT(f.bytes[1], addr, count, Status::OK, 0, kNoRtt, values, static_cast<uint8_t>(count), true);
+    }
     return Status::OK;
 #else
     WriteReply handler(f);
@@ -113,12 +119,12 @@ Status DriveLink::sendWrite(const WriteFrame& f, uint16_t addr, uint16_t count, 
     const TxSpec spec{f.bytes, f.len, f.bytes[1], 8, isTen, attempts};
     TxOutcome o;
     tx_.run(spec, handler, o, emergency);
-    logT(f.bytes[1], addr, count, o.status, o.attempts, o.rttMs, values, static_cast<uint8_t>(count));
+    logT(f.bytes[1], addr, count, o.status, o.attempts, o.rttMs, values, static_cast<uint8_t>(count), log == WriteLog::Always);
     return o.status;
 #endif
 }
 
-Status DriveLink::writeSpeedMode() {
+Status DriveLink::writeSpeedMode(WriteLog log) {
     WriteFrame f{};
     Status b = buildSetSpeedMode(slave_, f);
     const uint16_t v = kModeSpeed;
@@ -126,17 +132,17 @@ Status DriveLink::writeSpeedMode() {
         tx_.record(b);
         return b;
     }
-    return sendWrite(f, kRegRunMode, 1, &v, false);
+    return sendWrite(f, kRegRunMode, 1, &v, false, log);
 }
 
-Status DriveLink::writeControl(uint16_t word, bool emergency) {
+Status DriveLink::writeControl(uint16_t word, bool emergency, WriteLog log) {
     WriteFrame f{};
     Status b = buildControlWord(slave_, word, f);
     if (b != Status::OK) {
         tx_.record(b);
         return b;
     }
-    return sendWrite(f, kRegControlWord, 1, &word, emergency);
+    return sendWrite(f, kRegControlWord, 1, &word, emergency, log);
 }
 
 Status DriveLink::writeOfflineTime(uint16_t ms) {
@@ -149,7 +155,7 @@ Status DriveLink::writeOfflineTime(uint16_t ms) {
     return sendWrite(f, kRegOfflineTime, 1, &ms, false);
 }
 
-Status DriveLink::writeSpeeds(int16_t left, int16_t right, bool emergency) {
+Status DriveLink::writeSpeeds(int16_t left, int16_t right, bool emergency, WriteLog log) {
     WriteFrame f{};
     Status b = buildSetSpeeds(slave_, left, right, guard_.limitRaw(), f);
     if (b != Status::OK) {
@@ -157,5 +163,5 @@ Status DriveLink::writeSpeeds(int16_t left, int16_t right, bool emergency) {
         return b;
     }
     const uint16_t v[2] = {static_cast<uint16_t>(left), static_cast<uint16_t>(right)};
-    return sendWrite(f, kRegTargetSpeedLeft, 2, v, emergency);
+    return sendWrite(f, kRegTargetSpeedLeft, 2, v, emergency, log);
 }
