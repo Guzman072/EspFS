@@ -171,26 +171,26 @@ static void test_platformio_envs() {
     TEST_ASSERT_TRUE(natDry.find("-DDRIVE_DRYRUN") != std::string::npos && natDry.find("DRIVE_LIVE") == std::string::npos);
     TEST_ASSERT_TRUE_MESSAGE(p2.find("DRIVE_") == std::string::npos, "Phase 2 專案不得有 DRIVE_ 旗標");
     // 通道旗標由使用者指定（2026-11-23）：dryrun、live 必須是同一組（油門 CH2＝1、SWA CH7＝6）。
-    // FAILSAFE_VERIFIED=1 只能出現在 live（使用者於 2026-11-23 聲明 T2 (a)(b) 已在 dryrun 通過後指定）。
+    // FAILSAFE_VERIFIED=1 只能出現在 live（使用者於 2026-11-24 聲明混控版 T2 (a)(b) 已通過並指定）。
     // 之後若要改動這些旗標，須由使用者明確同意，並同步更新此測試。
     for (const std::string* env : {&live, &dry}) {
-        TEST_ASSERT_TRUE_MESSAGE(env->find("-DTHROTTLE_CH=1") != std::string::npos, "THROTTLE_CH 必須是使用者指定的 1");
-        TEST_ASSERT_TRUE_MESSAGE(env->find("-DARM_CH=6") != std::string::npos, "ARM_CH 必須是使用者指定的 6");
+        TEST_ASSERT_TRUE_MESSAGE(env->find("-DTHROTTLE_CH=1\n") != std::string::npos, "THROTTLE_CH 必須是使用者指定的 1");
+        TEST_ASSERT_TRUE_MESSAGE(env->find("-DARM_CH=6\n") != std::string::npos, "ARM_CH 必須是使用者指定的 6");
     }
-    TEST_ASSERT_TRUE_MESSAGE(live.find("-DFAILSAFE_VERIFIED=1") != std::string::npos, "live 需要 FAILSAFE_VERIFIED=1");
+    TEST_ASSERT_TRUE_MESSAGE(live.find("-DFAILSAFE_VERIFIED=1\n") != std::string::npos, "live 需要 FAILSAFE_VERIFIED=1");
     for (const std::string* env : {&dry, &nat, &natDry})
         TEST_ASSERT_TRUE_MESSAGE(env->find("FAILSAFE_VERIFIED") == std::string::npos, "FAILSAFE_VERIFIED 只能出現在 live");
     TEST_ASSERT_TRUE(p3.find("upload") == std::string::npos);
 }
-static void test_steer_channel_only_enabled_in_dryrun() {
+static void test_steer_channel_enabled_in_dryrun_and_live() {
     const std::string p3 = noComments(slurp("platformio.ini"));
-    const std::string dry = envSection(p3, "dryrun");
-    const std::string flag = "-DSTEER_CH=3";
-    const size_t at = p3.find("STEER_CH");
-    TEST_ASSERT_TRUE(dry.find(flag + "\n") != std::string::npos);
-    TEST_ASSERT_TRUE(at != std::string::npos && p3.find("STEER_CH", at + 1) == std::string::npos);
+    for (const char* env : {"dryrun", "live"}) {
+        TEST_ASSERT_TRUE_MESSAGE(envSection(p3, env).find("-DSTEER_CH=3\n") != std::string::npos, env);
+    }
+    for (const char* env : {"native", "native_dryrun"}) {
+        TEST_ASSERT_TRUE_MESSAGE(envSection(p3, env).find("STEER_CH") == std::string::npos, env);
+    }
     const std::string config = slurp("src/config.h");
-    TEST_ASSERT_TRUE(config.find("defined(DRIVE_LIVE) && defined(STEER_CH)") != std::string::npos);
     TEST_ASSERT_TRUE(config.find("STEER_CH >= 0 && STEER_CH < kRemoteChannels") != std::string::npos);
     TEST_ASSERT_TRUE(config.find("STEER_CH != THROTTLE_CH && STEER_CH != ARM_CH") != std::string::npos);
 }
@@ -223,7 +223,7 @@ void run_static_tests() {
     RUN_TEST(test_write_path_in_transport_exists_only_under_drive_live);
     RUN_TEST(test_base_transport_refuses_drive_writes_by_default);
     RUN_TEST(test_platformio_envs);
-    RUN_TEST(test_steer_channel_only_enabled_in_dryrun);
+    RUN_TEST(test_steer_channel_enabled_in_dryrun_and_live);
     RUN_TEST(test_config_h_blocks_compilation_until_user_specifies);
     RUN_TEST(test_dryrun_build_has_no_write_transport_sources);
 }

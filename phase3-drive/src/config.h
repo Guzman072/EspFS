@@ -26,10 +26,6 @@
 #error "live 需要 -DFAILSAFE_VERIFIED=1：T2（遙控器關機後 i-BUS 進入 STALE）通過後才可由使用者指定。"
 #endif
 
-#if defined(DRIVE_LIVE) && defined(STEER_CH)
-#error "目前只允許 dryrun 啟用轉向混控"
-#endif
-
 #ifdef STEER_CH
 static_assert(STEER_CH >= 0 && STEER_CH < kRemoteChannels, "STEER_CH 必須在 i-BUS 通道範圍內");
 static_assert(STEER_CH != THROTTLE_CH && STEER_CH != ARM_CH, "STEER_CH 不可與油門或 SWA 共用通道");
