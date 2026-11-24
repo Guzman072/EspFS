@@ -182,6 +182,18 @@ static void test_platformio_envs() {
         TEST_ASSERT_TRUE_MESSAGE(env->find("FAILSAFE_VERIFIED") == std::string::npos, "FAILSAFE_VERIFIED 只能出現在 live");
     TEST_ASSERT_TRUE(p3.find("upload") == std::string::npos);
 }
+static void test_steer_channel_only_enabled_in_dryrun() {
+    const std::string p3 = noComments(slurp("platformio.ini"));
+    const std::string dry = envSection(p3, "dryrun");
+    const std::string flag = "-DSTEER_CH=3";
+    const size_t at = p3.find("STEER_CH");
+    TEST_ASSERT_TRUE(dry.find(flag + "\n") != std::string::npos);
+    TEST_ASSERT_TRUE(at != std::string::npos && p3.find("STEER_CH", at + 1) == std::string::npos);
+    const std::string config = slurp("src/config.h");
+    TEST_ASSERT_TRUE(config.find("defined(DRIVE_LIVE) && defined(STEER_CH)") != std::string::npos);
+    TEST_ASSERT_TRUE(config.find("STEER_CH >= 0 && STEER_CH < kRemoteChannels") != std::string::npos);
+    TEST_ASSERT_TRUE(config.find("STEER_CH != THROTTLE_CH && STEER_CH != ARM_CH") != std::string::npos);
+}
 static void test_config_h_blocks_compilation_until_user_specifies() {
     const std::string c = slurp("src/config.h");
     static const std::regex t(R"(#ifndef THROTTLE_CH\s*\n\s*#error)");
@@ -190,7 +202,7 @@ static void test_config_h_blocks_compilation_until_user_specifies() {
     TEST_ASSERT_TRUE(std::regex_search(c, a));
     TEST_ASSERT_TRUE(c.find("defined(DRIVE_LIVE) && !defined(FAILSAFE_VERIFIED)") != std::string::npos);
     TEST_ASSERT_TRUE(c.find("defined(DRIVE_LIVE) && defined(DRIVE_DRYRUN)") != std::string::npos);
-    static const std::regex def(R"(#\s*define\s+(THROTTLE_CH|ARM_CH|FAILSAFE_VERIFIED)\b)");
+    static const std::regex def(R"(#\s*define\s+(THROTTLE_CH|ARM_CH|STEER_CH|FAILSAFE_VERIFIED)\b)");
     for (const auto& f : allSources()) TEST_ASSERT_FALSE_MESSAGE(std::regex_search(slurp(f), def), f.c_str());
     TEST_ASSERT_TRUE(slurp("src/drive_main.cpp").find("#include \"config.h\"") != std::string::npos);
 }
@@ -211,6 +223,7 @@ void run_static_tests() {
     RUN_TEST(test_write_path_in_transport_exists_only_under_drive_live);
     RUN_TEST(test_base_transport_refuses_drive_writes_by_default);
     RUN_TEST(test_platformio_envs);
+    RUN_TEST(test_steer_channel_only_enabled_in_dryrun);
     RUN_TEST(test_config_h_blocks_compilation_until_user_specifies);
     RUN_TEST(test_dryrun_build_has_no_write_transport_sources);
 }

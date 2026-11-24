@@ -29,7 +29,7 @@
 ## 不得自行更動
 18. 速度上限 `kSpeedLimitRpm`（目前 90 r/min，編譯期 ≤100）、超速倍率 `kOverspeedFactor`（1.2）、左右符號 `kLeftSign`／`kRightSign`（右輪 −1）：須使用者明確同意。
 19. `platformio.ini` 的 `live`／`dryrun` 旗標（`DRIVE_LIVE`、`FAILSAFE_VERIFIED` 等）及其靜態測試：須使用者明確同意。
-20. 使用者劃定不做：位置／轉矩模式、存檔（不寫 2010h）、修改驅動參數、自動清故障、轉向混控。
+20. 使用者劃定不做：位置／轉矩模式、存檔（不寫 2010h）、修改驅動參數、自動清故障。
 
 ## 故障與停機
 21. 任何故障碼、`LATCHED`、`REJECTED_*`、`TX_FAIL`、`WRITE_MISMATCH`：停止並回報，不自行繼續、不自動清故障。

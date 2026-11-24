@@ -50,8 +50,11 @@ void FailsafeMonitor::update(uint32_t now, IRemote& remote, ILineSink& out) {
         lastReportAt_ = now;
         const unsigned thr = throttleCh_ >= 0 ? remote.channel(throttleCh_) : 0u;
         const unsigned arm = armCh_ >= 0 ? remote.channel(armCh_) : 0u;
-        std::snprintf(line, sizeof line, "R,%u,%s,%u,%u,%u,%u", static_cast<unsigned>(now), remoteStatusName(st),
-                      static_cast<unsigned>(now - lastFrameAt_), static_cast<unsigned>(now - lastChangeAt_), thr, arm);
+        const int length = std::snprintf(line, sizeof line, "R,%u,%s,%u,%u,%u,%u", static_cast<unsigned>(now), remoteStatusName(st),
+                                         static_cast<unsigned>(now - lastFrameAt_), static_cast<unsigned>(now - lastChangeAt_), thr, arm);
+        if (steerCh_ >= 0 && steerCh_ < kRemoteChannels && length > 0 && static_cast<size_t>(length) < sizeof line) {
+            std::snprintf(line + length, sizeof line - length, ",%u", static_cast<unsigned>(snapshot_[steerCh_]));
+        }
         out.line(line);
     }
     if (now - lastT2At_ >= 5000) {

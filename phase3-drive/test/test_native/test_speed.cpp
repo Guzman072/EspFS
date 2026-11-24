@@ -86,6 +86,8 @@ static void test_constants_are_the_agreed_defaults() {
     TEST_ASSERT_EQUAL_UINT16(500, kOfflineWriteMs);
     TEST_ASSERT_EQUAL_INT(30, kTorqueStopLimit01A);
     TEST_ASSERT_FALSE(kSteeringEnabled);
+    TEST_ASSERT_EQUAL_FLOAT(0.25f, kSteeringGain);
+    TEST_ASSERT_EQUAL_INT(1, kSteerInputSign);  // 假設右推＝2000，待 dryrun 確認
 }
 
 void run_speed_tests() {
