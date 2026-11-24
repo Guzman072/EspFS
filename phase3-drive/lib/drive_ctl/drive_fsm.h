@@ -35,6 +35,7 @@ struct FsmConfig {
     int leftSign = kLeftSign;
     int rightSign = kRightSign;
     bool failsafeVerified = true;  // live：T2 通過後由使用者以 FAILSAFE_VERIFIED=1 指定；dryrun 不需要
+    int steerCh = -1;    // 負值代表只用油門
 };
 
 class DriveFsm {
@@ -58,7 +59,8 @@ private:
     ILineSink& out_;
     FsmConfig cfg_;
     FailsafeMonitor monitor_;
-    SlewLimiter slew_;
+    SlewLimiter leftSlew_;
+    SlewLimiter rightSlew_;
 
     DriveState state_ = DriveState::BOOT;
     FaultReason fault_ = FaultReason::NONE;

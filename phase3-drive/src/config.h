@@ -6,6 +6,7 @@
 // 這些旗標由使用者寫進 platformio.ini 的對應環境；Claude 不自行假設通道（Phase 1 的 CH1～CH10 對應尚未驗證）。
 #pragma once
 #include "drive_config.h"
+#include "remote_input.h"
 
 #ifndef THROTTLE_CH
 #error "THROTTLE_CH 未定義：請由使用者指定油門通道（0 起算），例如 -DTHROTTLE_CH=2。Claude 不自行假設通道。"
@@ -23,6 +24,18 @@
 
 #if defined(DRIVE_LIVE) && !defined(FAILSAFE_VERIFIED)
 #error "live 需要 -DFAILSAFE_VERIFIED=1：T2（遙控器關機後 i-BUS 進入 STALE）通過後才可由使用者指定。"
+#endif
+
+#if defined(DRIVE_LIVE) && defined(STEER_CH)
+#error "目前只允許 dryrun 啟用轉向混控"
+#endif
+
+#ifdef STEER_CH
+static_assert(STEER_CH >= 0 && STEER_CH < kRemoteChannels, "STEER_CH 必須在 i-BUS 通道範圍內");
+static_assert(STEER_CH != THROTTLE_CH && STEER_CH != ARM_CH, "STEER_CH 不可與油門或 SWA 共用通道");
+constexpr int kSteeringChannel = STEER_CH;
+#else
+constexpr int kSteeringChannel = -1;
 #endif
 
 #ifdef DRIVE_LIVE

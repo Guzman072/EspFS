@@ -21,6 +21,7 @@ FsmConfig makeConfig() {
     FsmConfig c;
     c.throttleCh = THROTTLE_CH;
     c.armCh = ARM_CH;
+    if (kSteeringEnabled) c.steerCh = kSteeringChannel;
     c.failsafeVerified = kFailsafeVerified;
     return c;
 }

@@ -670,12 +670,245 @@ static void test_real_signs_normalize_feedback_in_d_lines() {
     h.run(600);
     TEST_ASSERT_TRUE(h.log.has(",actual_velocity_R,-90.0,r/min"));
 }
+
+// 兩個 native 環境都用假遙控器測混控；既有 Rig 預設仍走直行路徑。
+constexpr int kSteer = 3;
+static FsmConfig steeringConfig() {
+    FsmConfig c = Rig::realConfig();
+    c.steerCh = kSteer;
+    return c;
+}
+
+struct SteeringCommand {
+    unsigned ms = 0, throttle = 0;
+    float chassisRpm = 0, steerRpm = 0, leftTarget = 0, rightTarget = 0;
+    int leftRaw = 0, rightRaw = 0;
+};
+
+static int parseSteeringCommand(const std::string& line, SteeringCommand& c) {
+    return std::sscanf(line.c_str(), "C,%u,%u,%f,%d,%d,%f,%f,%f", &c.ms, &c.throttle, &c.chassisRpm,
+                       &c.leftRaw, &c.rightRaw, &c.steerRpm, &c.leftTarget, &c.rightTarget);
+}
+
+static void expectSteeringTarget(const Rig& g, float steer, float left, float right, int leftRaw, int rightRaw) {
+    for (auto it = g.log.lines.rbegin(); it != g.log.lines.rend(); ++it) {
+        if (it->compare(0, 2, "C,") != 0) continue;
+        SteeringCommand c;
+        TEST_ASSERT_EQUAL_INT(8, parseSteeringCommand(*it, c));
+        TEST_ASSERT_EQUAL_UINT(g.r.ch[kThrottle], c.throttle);
+        TEST_ASSERT_FLOAT_WITHIN(0.01f, steer, c.steerRpm);
+        TEST_ASSERT_FLOAT_WITHIN(0.01f, left, c.leftTarget);
+        TEST_ASSERT_FLOAT_WITHIN(0.01f, right, c.rightTarget);
+        TEST_ASSERT_EQUAL_INT(leftRaw, c.leftRaw);
+        TEST_ASSERT_EQUAL_INT(rightRaw, c.rightRaw);
+        return;
+    }
+    TEST_FAIL_MESSAGE("找不到指令 C 行");
+}
+
+static void test_steering_maps_deadband_and_turns_both_ways_in_forward_and_reverse() {
+    Rig g(steeringConfig());
+    g.d.regs[0x2022] = 10;
+    g.bootOnly();
+    g.unlockViaSwitch();
+    struct Case { unsigned throttle, steer; float diff, left, right; int rawL, rawR; };
+    const Case cases[] = {
+        {1770, 1500, 0, 45, 45, 450, -450},
+        {1770, 1460, 0, 45, 45, 450, -450},
+        {1770, 1540, 0, 45, 45, 450, -450},
+        {1770, 1542, 0.1f, 45.1f, 44.9f, 451, -449},
+        {1770, 1458, -0.1f, 44.9f, 45.1f, 449, -451},
+        {1770, 2000, 22.5f, 67.5f, 22.5f, 675, -225},
+        {1770, 1000, -22.5f, 22.5f, 67.5f, 225, -675},
+        {1230, 2000, 22.5f, -22.5f, -67.5f, -225, 675},
+        {1230, 1000, -22.5f, -67.5f, -22.5f, -675, 225},
+    };
+    for (const auto& c : cases) {
+        g.r.ch[kThrottle] = c.throttle;
+        g.r.ch[kSteer] = c.steer;
+        g.run(2500);
+        TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
+        expectSteeringTarget(g, c.diff, c.left, c.right, c.rawL, c.rawR);
+    }
+    // 確認混控經過現有 2088h／2089h 路徑，右輪符號只在送出前套用。
+#ifdef DRIVE_DRYRUN
+    TEST_ASSERT_TRUE(g.log.has("# DRY W 01 10 20 88 00 02 04 FD 5D 00 E1"));
+    TEST_ASSERT_TRUE(g.t.driveWrites.empty());
+#else
+    TEST_ASSERT_TRUE(g.sawFrame("S2088=-675,225"));
+#endif
+}
+
+static void test_steering_limits_each_wheel_and_disallows_pivot() {
+    Rig g(steeringConfig());
+    g.bootOnly();
+    g.unlockViaSwitch();
+    g.r.ch[kSteer] = 2400;  // 超出 CH4 上界時仍只用滿行程
+    g.run(100);
+    expectSteeringTarget(g, 0, 0, 0, 0, 0);
+    g.r.ch[kThrottle] = 1586;  // 9 r/min，S 限於 9 r/min
+    g.run(600);
+    expectSteeringTarget(g, 9, 18, 0, 18, 0);
+    g.r.ch[kThrottle] = 2000;
+    g.run(2000);
+    expectSteeringTarget(g, 22.5f, 90, 67.5f, 90, -68);
+    g.r.ch[kThrottle] = 1000;
+    g.run(3300);
+    expectSteeringTarget(g, 22.5f, -67.5f, -90, -68, 90);
+    g.r.ch[kThrottle] = 1500;
+    g.run(1700);
+    expectSteeringTarget(g, 0, 0, 0, 0, 0);
+}
+
+static void test_steering_each_wheel_slews_and_holds_its_own_target() {
+    Rig g(steeringConfig());
+    g.d.regs[0x2022] = 10;
+    g.bootOnly();
+    g.unlockViaSwitch();
+    g.r.ch[kThrottle] = 1770;
+    g.r.ch[kSteer] = 2000;
+    g.run(1400);
+    SteeringCommand prev;
+    bool havePrev = false;
+    bool rightAtTargetFirst = false;
+    for (const auto& line : g.log.lines) {
+        SteeringCommand c;
+        if (parseSteeringCommand(line, c) != 8) continue;
+        if (havePrev) {
+            const float maxStep = kSlewRpmPerSec * (c.ms - prev.ms) / 100.0f + 1.0f;  // 原始值，含取整誤差
+            TEST_ASSERT_FLOAT_WITHIN(maxStep, prev.leftRaw, c.leftRaw);
+            TEST_ASSERT_FLOAT_WITHIN(maxStep, prev.rightRaw, c.rightRaw);
+            rightAtTargetFirst |= c.rightRaw == -225 && c.leftRaw > prev.leftRaw && c.leftRaw < 675;
+        }
+        prev = c;
+        havePrev = true;
+    }
+    TEST_ASSERT_TRUE(rightAtTargetFirst);
+    expectSteeringTarget(g, 22.5f, 67.5f, 22.5f, 675, -225);
+}
+
+static void test_steering_requires_continuous_overlap_of_both_centered_axes() {
+    Rig g(steeringConfig());
+    g.bootOnly();
+    g.r.ch[kSteer] = 1541;
+    g.run(100);
+    g.r.ch[kArm] = 2000;
+    g.run(600);
+    TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+    g.r.ch[kThrottle] = 1541;
+    g.r.ch[kSteer] = 1460;
+    g.run(600);
+    TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+    g.r.ch[kThrottle] = 1540;
+    g.run(450);
+    TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+    g.run(100);
+    TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
+}
+
+static void test_steering_restarts_center_timer_on_brief_excursion_or_signal_loss() {
+    for (int event : {kThrottle, kSteer, -1, -2}) {
+        Rig g(steeringConfig());
+        g.bootOnly();
+        g.run(400);
+        if (event >= 0) g.r.ch[event] = 1541;
+        else g.r.st = event == -1 ? RemoteStatus::STALE : RemoteStatus::WAITING;
+        g.run(10);  // 短於 50 ms 控制週期，仍須重新計時
+        if (event >= 0) g.r.ch[event] = 1500;
+        g.r.st = RemoteStatus::RECEIVING;
+        g.r.ch[kArm] = 2000;
+        g.run(450);
+        TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+        g.run(100);
+        TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
+    }
+}
+
+static void test_steering_disarms_with_frozen_ch4_and_with_stale_then_rearms_from_zero() {
+    for (bool stale : {false, true}) {
+        Rig g(steeringConfig());
+        g.bootOnly();
+        g.unlockViaSwitch();
+        g.r.ch[kThrottle] = 1770;
+        g.r.ch[kSteer] = 2000;
+        g.run(1800);
+        expectSteeringTarget(g, 22.5f, 67.5f, 22.5f, 68, -23);
+        const size_t frameMark = g.t.writes.size();
+        const size_t logMark = g.log.lines.size();
+        if (stale) g.r.st = RemoteStatus::STALE;
+        else g.r.ch[kArm] = 1000;  // CH7 failsafe 生效，CH4 仍保留舊值
+        g.r.ch[kThrottle] = 1500;
+        g.run(1200);
+        TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+        TEST_ASSERT_TRUE(g.log.indexOf(",DISARMING", logMark) >= 0);
+        if (stale) TEST_ASSERT_TRUE(g.log.has("# T2 STALE observed"));
+#ifdef DRIVE_DRYRUN
+        const int stop = g.log.indexOf("# DRY W 01 06 20 0E 00 07", logMark);
+        TEST_ASSERT_TRUE(stop > 0);
+        TEST_ASSERT_TRUE(g.log.lines[static_cast<size_t>(stop) - 1].find("# DRY W 01 10 20 88 00 02 04 00 00 00 00") == 0);
+        TEST_ASSERT_EQUAL_UINT(frameMark, g.t.writes.size());
+#else
+        expectPrefix(g, frameMark, {"S2088=0,0", "W200E=0007"});
+#endif
+        g.r.st = RemoteStatus::RECEIVING;
+        g.r.ch[kArm] = 2000;
+        g.run(100);
+        TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+        g.r.ch[kSteer] = 1500;
+        if (stale) {
+            g.run(700);
+            TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+            g.r.ch[kArm] = 1000;
+            g.run(100);
+            g.r.ch[kArm] = 2000;
+        }
+        g.run(700);
+        TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
+        expectSteeringTarget(g, 0, 0, 0, 0, 0);
+    }
+}
+
+static void test_steering_logs_append_fields_and_straight_line_keeps_original_format() {
+    Rig steering(steeringConfig());
+    Rig straight(Rig::realConfig());
+    for (Rig* g : {&steering, &straight}) {
+        g->bootOnly();
+        g->unlockViaSwitch();
+        g->r.ch[kSteer] = 1623;
+        g->run(1100);
+        const bool mixed = g == &steering;
+        bool sawRemote = false, sawCommand = false;
+        for (const auto& line : g->log.lines) {
+            unsigned ms, age, unchanged, throttle, arm, raw;
+            char status[16];
+            const int fields = std::sscanf(line.c_str(), "R,%u,%15[^,],%u,%u,%u,%u,%u", &ms, status, &age, &unchanged,
+                                           &throttle, &arm, &raw);
+            if (fields > 0) {
+                TEST_ASSERT_EQUAL_INT(mixed ? 7 : 6, fields);
+                TEST_ASSERT_EQUAL_UINT(1500, throttle);
+                TEST_ASSERT_EQUAL_UINT(2000, arm);
+                sawRemote |= !mixed || raw == 1623;
+            }
+            SteeringCommand c;
+            const int commands = parseSteeringCommand(line, c);
+            if (commands > 0) {
+                TEST_ASSERT_EQUAL_INT(mixed ? 8 : 5, commands);
+                TEST_ASSERT_EQUAL_UINT(1500, c.throttle);
+                TEST_ASSERT_EQUAL_INT(0, c.leftRaw);
+                TEST_ASSERT_EQUAL_INT(0, c.rightRaw);
+                sawCommand = true;
+            }
+        }
+        TEST_ASSERT_TRUE(sawRemote && sawCommand);
+    }
+}
+
 // 超速判斷：方向換成「油門往上為正」後取絕對值，108.0 r/min 邊界不超過、1081 超過，任何輪、任何方向都一樣。
-static void test_overspeed_is_symmetric_with_real_signs() {
+static void expect_symmetric_overspeed(const FsmConfig& config) {
     struct Case { int16_t velL, velR; };
     const Case ok[] = {{1080, -1080}, {-1080, 1080}, {1080, 1080}, {-1080, -1080}};
     for (const Case& c : ok) {
-        Rig g(Rig::realConfig());
+        Rig g(config);
         g.bootOnly();
         g.unlockViaSwitch();
         g.d.actualVelL = c.velL;
@@ -685,7 +918,7 @@ static void test_overspeed_is_symmetric_with_real_signs() {
     }
     const Case bad[] = {{1081, 0}, {-1081, 0}, {0, 1081}, {0, -1081}};
     for (const Case& c : bad) {
-        Rig g(Rig::realConfig());
+        Rig g(config);
         g.bootOnly();
         g.unlockViaSwitch();
         g.d.actualVelL = c.velL;
@@ -696,6 +929,8 @@ static void test_overspeed_is_symmetric_with_real_signs() {
         TEST_ASSERT_EQUAL_UINT32(1081, g.fsm.faultDetail());
     }
 }
+static void test_overspeed_is_symmetric_with_real_signs() { expect_symmetric_overspeed(Rig::realConfig()); }
+static void test_overspeed_is_symmetric_with_steering() { expect_symmetric_overspeed(steeringConfig()); }
 #ifndef DRIVE_DRYRUN
 // 端到端（只有 live 有真的寫入）：假驅動器的回授跟著寫入值走，油門往上時左右回授都是正的。
 static void test_real_signs_end_to_end_feedback_positive_on_both_wheels() {
@@ -841,6 +1076,14 @@ void run_fsm_tests() {
     RUN_TEST(test_real_signs_are_left_plus_and_right_minus);
     RUN_TEST(test_real_signs_write_right_wheel_reversed);
     RUN_TEST(test_real_signs_normalize_feedback_in_d_lines);
+    RUN_TEST(test_steering_maps_deadband_and_turns_both_ways_in_forward_and_reverse);
+    RUN_TEST(test_steering_limits_each_wheel_and_disallows_pivot);
+    RUN_TEST(test_steering_each_wheel_slews_and_holds_its_own_target);
+    RUN_TEST(test_steering_requires_continuous_overlap_of_both_centered_axes);
+    RUN_TEST(test_steering_restarts_center_timer_on_brief_excursion_or_signal_loss);
+    RUN_TEST(test_steering_disarms_with_frozen_ch4_and_with_stale_then_rearms_from_zero);
+    RUN_TEST(test_steering_logs_append_fields_and_straight_line_keeps_original_format);
+    RUN_TEST(test_overspeed_is_symmetric_with_steering);
     RUN_TEST(test_overspeed_is_symmetric_with_real_signs);
 #ifndef DRIVE_DRYRUN
     RUN_TEST(test_real_signs_end_to_end_feedback_positive_on_both_wheels);

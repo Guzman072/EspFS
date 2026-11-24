@@ -1,4 +1,5 @@
 #include "drive_fsm.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -8,6 +9,8 @@ namespace {
 constexpr uint16_t kStatusEnabledMask = 0xC0C0;  // 20A2h：左 bit15–14、右 bit7–6；00 00＝解軸（未使能）
 
 int absInt(int v) { return v < 0 ? -v : v; }
+
+float clampRpm(float rpm, float limit) { return std::max(-limit, std::min(rpm, limit)); }
 
 // 20A2h 的軸狀態（V4 RS485 §六、p.18）：每軸 2 位元，左 bit15–14、右 bit7–6；00 解軸、40 鎖軸、80 急停、C0 報警。
 const char* axisStateName(unsigned twoBits) {
@@ -73,8 +76,8 @@ FaultReason faultReasonFor(Status s) {
 }
 
 DriveFsm::DriveFsm(ITransport& transport, DriveLink& link, IRemote& remote, ILineSink& sink, const FsmConfig& cfg)
-    : t_(transport), link_(link), remote_(remote), out_(sink), cfg_(cfg), monitor_(cfg.throttleCh, cfg.armCh),
-      slew_(cfg.speedLimitRpm, kSlewRpmPerSec) {
+    : t_(transport), link_(link), remote_(remote), out_(sink), cfg_(cfg), monitor_(cfg.throttleCh, cfg.armCh, cfg.steerCh),
+      leftSlew_(cfg.speedLimitRpm, kSlewRpmPerSec), rightSlew_(cfg.speedLimitRpm, kSlewRpmPerSec) {
     link_.setVelocitySigns(cfg.leftSign, cfg.rightSign);  // 讀回端與寫入端（clampRaw）用同一組正負號
 }
 
@@ -136,7 +139,10 @@ void DriveFsm::updateRemoteFlags(uint32_t now) {
         return;
     }
     if (remote_.channel(cfg_.armCh) < cfg_.armOnThreshold) sawArmOff_ = true;
-    if (absInt(static_cast<int>(remote_.channel(cfg_.throttleCh)) - kIbusCenter) <= cfg_.deadband) {
+    const auto centered = [this](int channel) {
+        return absInt(static_cast<int>(remote_.channel(channel)) - kIbusCenter) <= cfg_.deadband;
+    };
+    if (centered(cfg_.throttleCh) && (cfg_.steerCh < 0 || centered(cfg_.steerCh))) {
         if (!centerValid_) {
             centerValid_ = true;
             centerSince_ = now;
@@ -247,8 +253,10 @@ void DriveFsm::doBoot() {
 }
 
 void DriveFsm::doDisarmed(uint32_t now) {
+    // 混控版在每次 poll 後檢查雙軸，看到任一軸離開中位或失聯就重計。
+    if (cfg_.steerCh >= 0) updateRemoteFlags(now);
     if (!tickDue(now)) return;
-    updateRemoteFlags(now);
+    if (cfg_.steerCh < 0) updateRemoteFlags(now);
     if (!enabled_ || cfg_.armCh < 0 || cfg_.throttleCh < 0) return;
 
     const bool armOn = remote_.channel(cfg_.armCh) >= cfg_.armOnThreshold;
@@ -322,7 +330,8 @@ void DriveFsm::doDisarmed(uint32_t now) {
 void DriveFsm::doArming(uint32_t now) {
     setState(DriveState::ARMING);
     everArmed_ = true;  // 從第一筆寫入開始，任何失敗都要送停止指令
-    slew_.reset();
+    leftSlew_.reset();
+    rightSlew_.reset();
     Status s = link_.writeSpeedMode();
     if (s != Status::OK) return faultFromStatus(s);
     s = link_.writeSpeeds(0, 0);
@@ -354,22 +363,39 @@ void DriveFsm::doArmed(uint32_t now) {
     link_.setLogAll(armedTicks_ % kLogEveryNthTick == 0);
     ++armedTicks_;
 
-    const float want = throttleToRpm(remote_.channel(cfg_.throttleCh), cfg_.deadband, cfg_.speedLimitRpm);
+    const unsigned throttle = remote_.channel(cfg_.throttleCh);
+    const float want = throttleToRpm(throttle, cfg_.deadband, cfg_.speedLimitRpm);
+    const bool steering = cfg_.steerCh >= 0;
+    float steer = 0.0f;
+    if (steering) {
+        const float input = throttleToRpm(remote_.channel(cfg_.steerCh), cfg_.deadband, 1.0f) * kSteerInputSign;
+        steer = clampRpm(input * kSteeringGain * cfg_.speedLimitRpm, std::fabs(want));
+    }
+    const float leftTarget = steering ? clampRpm(want + steer, cfg_.speedLimitRpm) : want;
+    const float rightTarget = steering ? clampRpm(want - steer, cfg_.speedLimitRpm) : want;
     const uint32_t dt = now - lastCmdAt_;
     lastCmdAt_ = now;
-    const float cmd = slew_.step(want, dt);
+    const float leftCmd = leftSlew_.step(leftTarget, dt);
+    const float rightCmd = steering ? rightSlew_.step(rightTarget, dt) : leftCmd;
     auto clampRaw = [this](float rpm, int sign) {
         int raw = rpmToRaw(rpm * static_cast<float>(sign), resolution_);
         if (raw > limitRaw_) raw = limitRaw_;
         if (raw < -limitRaw_) raw = -limitRaw_;
         return static_cast<int16_t>(raw);
     };
-    const int16_t left = clampRaw(cmd, cfg_.leftSign);
-    const int16_t right = clampRaw(cmd, cfg_.rightSign);
+    const int16_t left = clampRaw(leftCmd, cfg_.leftSign);
+    const int16_t right = clampRaw(rightCmd, cfg_.rightSign);
 
-    char line[80];
-    std::snprintf(line, sizeof line, "C,%u,%u,%.1f,%d,%d", static_cast<unsigned>(now),
-                  static_cast<unsigned>(remote_.channel(cfg_.throttleCh)), static_cast<double>(cmd), left, right);
+    char line[112];
+    if (steering) {
+        const float cmd = (leftCmd + rightCmd) * 0.5f;
+        std::snprintf(line, sizeof line, "C,%u,%u,%.1f,%d,%d,%.1f,%.1f,%.1f", static_cast<unsigned>(now), throttle,
+                      static_cast<double>(cmd), left, right, static_cast<double>(steer),
+                      static_cast<double>(leftTarget), static_cast<double>(rightTarget));
+    } else {
+        std::snprintf(line, sizeof line, "C,%u,%u,%.1f,%d,%d", static_cast<unsigned>(now), throttle,
+                      static_cast<double>(leftCmd), left, right);
+    }
     out_.line(line);
 
     Status s = link_.writeSpeeds(left, right, false);  // 保活：每個週期都寫
@@ -406,7 +432,8 @@ void DriveFsm::doDisarm(bool armSwitchOff) {
     if (s != Status::OK) return faultFromStatus(s);
     s = link_.writeControl(kCtrlStop);
     if (s != Status::OK) return faultFromStatus(s);
-    slew_.reset();
+    leftSlew_.reset();
+    rightSlew_.reset();
     sawArmOff_ = armSwitchOff;  // STALE 造成的解除：必須再看過 SWA 關閉才能重新解鎖
     centerValid_ = false;
     lastNoteKey_ = -1;
@@ -428,6 +455,8 @@ void DriveFsm::doFault(FaultReason reason, uint32_t detail) {
         link_.writeControl(kCtrlEmergencyStop, true);
         link_.writeSpeeds(0, 0, true);
     }
+    leftSlew_.reset();
+    rightSlew_.reset();
     fault_ = reason;
     faultDetail_ = detail;
     setState(DriveState::LATCHED);

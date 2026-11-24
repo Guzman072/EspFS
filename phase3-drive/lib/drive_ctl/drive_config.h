@@ -20,8 +20,14 @@ constexpr int kArmOnThreshold = 1700;                       // SWA 視為打開�
 constexpr int kLeftSign = 1;
 constexpr int kRightSign = -1;
 static_assert((kLeftSign == 1 || kLeftSign == -1) && (kRightSign == 1 || kRightSign == -1), "方向正負號只能是 +1 或 -1");
-constexpr bool kSteeringEnabled = false;                    // 轉向混控：本階段關閉
-constexpr float kSteeringGain = 0.5f;                       // 保留，kSteeringEnabled 為 false 時不使用
+#ifdef STEER_CH
+constexpr bool kSteeringEnabled = true;
+#else
+constexpr bool kSteeringEnabled = false;
+#endif
+constexpr float kSteeringGain = 0.25f;
+constexpr int kSteerInputSign = 1;                          // 假設右推＝2000，待 dryrun 確認
+static_assert(kSteerInputSign == 1 || kSteerInputSign == -1, "轉向輸入極性只能是 +1 或 -1");
 
 // 時序
 constexpr uint32_t kControlPeriodMs = 50;
