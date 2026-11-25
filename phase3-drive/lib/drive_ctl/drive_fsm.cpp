@@ -1,6 +1,4 @@
 #include "drive_fsm.h"
-#include <algorithm>
-#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include "write_rules.h"
@@ -11,8 +9,6 @@ constexpr uint32_t kStopSampleWindowMs = 3000;
 constexpr int kStopSpeed01 = 10;  // 1.0 r/min，取樣值須嚴格低於此門檻
 
 int absInt(int v) { return v < 0 ? -v : v; }
-
-float clampRpm(float rpm, float limit) { return std::max(-limit, std::min(rpm, limit)); }
 
 // 20A2h 的軸狀態（V4 RS485 §六、p.18）：每軸 2 位元，左 bit15–14、右 bit7–6；00 解軸、40 鎖軸、80 急停、C0 報警。
 const char* axisStateName(unsigned twoBits) {
@@ -407,17 +403,15 @@ void DriveFsm::doArmed(uint32_t now) {
     const unsigned throttle = remote_.channel(cfg_.throttleCh);
     const float want = throttleToRpm(throttle, cfg_.deadband, cfg_.speedLimitRpm);
     const bool steering = cfg_.steerCh >= 0;
-    float steer = 0.0f;
+    WheelTargets targets{want, want};
     if (steering) {
         const float input = throttleToRpm(remote_.channel(cfg_.steerCh), cfg_.deadband, 1.0f) * kSteerInputSign;
-        steer = clampRpm(input * kSteeringGain * cfg_.speedLimitRpm, std::fabs(want));
+        targets = mixWheelTargets(want, input, cfg_.speedLimitRpm);
     }
-    const float leftTarget = steering ? clampRpm(want + steer, cfg_.speedLimitRpm) : want;
-    const float rightTarget = steering ? clampRpm(want - steer, cfg_.speedLimitRpm) : want;
     const uint32_t dt = now - lastCmdAt_;
     lastCmdAt_ = now;
-    const float leftCmd = leftSlew_.step(leftTarget, dt);
-    const float rightCmd = steering ? rightSlew_.step(rightTarget, dt) : leftCmd;
+    const float leftCmd = leftSlew_.step(targets.left, dt);
+    const float rightCmd = steering ? rightSlew_.step(targets.right, dt) : leftCmd;
     auto clampRaw = [this](float rpm, int sign) {
         int raw = rpmToRaw(rpm * static_cast<float>(sign), resolution_);
         if (raw > limitRaw_) raw = limitRaw_;
@@ -430,9 +424,10 @@ void DriveFsm::doArmed(uint32_t now) {
     char line[112];
     if (steering) {
         const float cmd = (leftCmd + rightCmd) * 0.5f;
+        const float steer = (targets.left - targets.right) * 0.5f;
         std::snprintf(line, sizeof line, "C,%u,%u,%.1f,%d,%d,%.1f,%.1f,%.1f", static_cast<unsigned>(now), throttle,
                       static_cast<double>(cmd), left, right, static_cast<double>(steer),
-                      static_cast<double>(leftTarget), static_cast<double>(rightTarget));
+                      static_cast<double>(targets.left), static_cast<double>(targets.right));
     } else {
         std::snprintf(line, sizeof line, "C,%u,%u,%.1f,%d,%d", static_cast<unsigned>(now), throttle,
                       static_cast<double>(leftCmd), left, right);

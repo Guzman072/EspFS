@@ -12,8 +12,8 @@ static void test_conversion_for_value_1_and_A() {
     // 2022h＝1：單位 1 r/min；2022h＝A（10）：單位 0.1 r/min（V4 RS485 p.14、p.7）
     TEST_ASSERT_EQUAL_INT16(30, rpmToRaw(30.0f, 1));
     TEST_ASSERT_EQUAL_INT16(300, rpmToRaw(30.0f, 10));
-    TEST_ASSERT_EQUAL_INT16(90, limitRawFor(1));    // 上限 90 r/min（使用者決定，2026-11-23）
-    TEST_ASSERT_EQUAL_INT16(900, limitRawFor(10));
+    TEST_ASSERT_EQUAL_INT16(60, limitRawFor(1));
+    TEST_ASSERT_EQUAL_INT16(600, limitRawFor(10));
     TEST_ASSERT_EQUAL_INT16(-15, rpmToRaw(-15.0f, 1));
     TEST_ASSERT_EQUAL_INT16(-150, rpmToRaw(-15.0f, 10));
     TEST_ASSERT_EQUAL_INT16(0, rpmToRaw(0.0f, 10));
@@ -38,26 +38,37 @@ static void test_throttle_mapping() {
     TEST_ASSERT_FLOAT_WITHIN(1e-4f, -L, throttleToRpm(0, kDeadband, L));
     TEST_ASSERT_FLOAT_WITHIN(1e-3f, L / 2.0f, throttleToRpm(1500 + kDeadband + (500 - kDeadband) / 2, kDeadband, L));
 }
-static void test_slew_rises_linearly_at_3_rpm_per_50ms_to_limit_in_1_5_s() {
+static void test_mixed_targets_stay_within_limit_and_reverse_has_two_negative_targets() {
+    for (int throttle = -60; throttle <= 60; ++throttle) {
+        for (int steering = -10; steering <= 10; ++steering) {
+            const auto targets = mixWheelTargets(throttle, steering / 10.0f, kSpeedLimitRpm);
+            TEST_ASSERT_TRUE(std::fabs(targets.left) <= 60.00001f);
+            TEST_ASSERT_TRUE(std::fabs(targets.right) <= 60.00001f);
+            if (throttle < 0) TEST_ASSERT_TRUE(targets.left < 0.0f && targets.right < 0.0f);
+        }
+    }
+}
+
+static void test_slew_rises_linearly_at_3_rpm_per_50ms_to_limit_in_1_s() {
     SlewLimiter s(kSpeedLimitRpm, kSlewRpmPerSec);
     float v = 0;
     v = s.step(kSpeedLimitRpm, 50);
     TEST_ASSERT_FLOAT_WITHIN(1e-3f, 3.0f, v);                       // 每 50 ms 加 3.0 r/min
-    for (int ms = 100; ms <= 750; ms += 50) v = s.step(kSpeedLimitRpm, 50);
-    TEST_ASSERT_FLOAT_WITHIN(1e-3f, 45.0f, v);                      // 750 ms：一半
-    for (int ms = 800; ms <= 1500; ms += 50) v = s.step(kSpeedLimitRpm, 50);
-    TEST_ASSERT_FLOAT_WITHIN(1e-3f, kSpeedLimitRpm, v);             // 1500 ms：到達上限
+    for (int ms = 100; ms <= 500; ms += 50) v = s.step(kSpeedLimitRpm, 50);
+    TEST_ASSERT_FLOAT_WITHIN(1e-3f, 30.0f, v);                      // 500 ms：一半
+    for (int ms = 550; ms <= 1000; ms += 50) v = s.step(kSpeedLimitRpm, 50);
+    TEST_ASSERT_FLOAT_WITHIN(1e-3f, kSpeedLimitRpm, v);             // 1000 ms：到達上限
     v = s.step(kSpeedLimitRpm, 50);
     TEST_ASSERT_FLOAT_WITHIN(1e-3f, kSpeedLimitRpm, v);             // 不會超過
 }
 static void test_slew_decelerates_at_same_rate_and_handles_reverse() {
     SlewLimiter s(kSpeedLimitRpm, kSlewRpmPerSec);
     for (int i = 0; i < 40; ++i) s.step(kSpeedLimitRpm, 50);
-    float v = s.step(0.0f, 750);
-    TEST_ASSERT_FLOAT_WITHIN(1e-3f, 45.0f, v);                      // 750 ms 減少一半
-    v = s.step(0.0f, 750);
+    float v = s.step(0.0f, 500);
+    TEST_ASSERT_FLOAT_WITHIN(1e-3f, 30.0f, v);                      // 500 ms 減少一半
+    v = s.step(0.0f, 500);
     TEST_ASSERT_FLOAT_WITHIN(1e-3f, 0.0f, v);
-    v = s.step(-kSpeedLimitRpm, 1500);
+    v = s.step(-kSpeedLimitRpm, 1000);
     TEST_ASSERT_FLOAT_WITHIN(1e-3f, -kSpeedLimitRpm, v);
 }
 static void test_slew_clamps_target_and_resets() {
@@ -69,13 +80,14 @@ static void test_slew_clamps_target_and_resets() {
     TEST_ASSERT_EQUAL_FLOAT(0.0f, s.step(0.0f, 0));
 }
 static void test_overspeed_threshold_is_derived_from_limit_and_factor() {
-    TEST_ASSERT_EQUAL_INT(1080, overspeedLimit01(kSpeedLimitRpm));  // 90 × 1.2 × 10（使用者決定，2026-11-23）
+    TEST_ASSERT_EQUAL_INT(720, overspeedLimit01(kSpeedLimitRpm));  // 60 × 1.2 × 10
     TEST_ASSERT_EQUAL_INT(1080, overspeedLimit01(90.0f));
-    TEST_ASSERT_EQUAL_INT(360, overspeedLimit01(30.0f));            // 由上限推導，不是寫死的 1080
+    TEST_ASSERT_EQUAL_INT(360, overspeedLimit01(30.0f));
     TEST_ASSERT_EQUAL_INT(static_cast<int>(std::lround(kSpeedLimitRpm * kOverspeedFactor * 10.0f)), overspeedLimit01(kSpeedLimitRpm));
 }
 static void test_constants_are_the_agreed_defaults() {
-    TEST_ASSERT_EQUAL_FLOAT(90.0f, kSpeedLimitRpm);                 // 使用者決定（2026-11-23）：30 → 90
+    TEST_ASSERT_EQUAL_FLOAT(60.0f, kSpeedLimitRpm);
+    TEST_ASSERT_EQUAL_FLOAT(45.0f, kInPlaceMaxRpm);
     TEST_ASSERT_EQUAL_FLOAT(60.0f, kSlewRpmPerSec);                 // 每 50 ms 3.0 r/min
     TEST_ASSERT_FLOAT_WITHIN(1e-4f, 3.0f, kSlewRpmPerSec * (kControlPeriodMs / 1000.0f));
     TEST_ASSERT_EQUAL_FLOAT(1.2f, kOverspeedFactor);               // 使用者決定（2026-11-23）：1.5 → 1.2
@@ -95,7 +107,8 @@ void run_speed_tests() {
     RUN_TEST(test_conversion_for_value_1_and_A);
     RUN_TEST(test_conversion_other_divisors_and_rounding);
     RUN_TEST(test_throttle_mapping);
-    RUN_TEST(test_slew_rises_linearly_at_3_rpm_per_50ms_to_limit_in_1_5_s);
+    RUN_TEST(test_mixed_targets_stay_within_limit_and_reverse_has_two_negative_targets);
+    RUN_TEST(test_slew_rises_linearly_at_3_rpm_per_50ms_to_limit_in_1_s);
     RUN_TEST(test_slew_decelerates_at_same_rate_and_handles_reverse);
     RUN_TEST(test_slew_clamps_target_and_resets);
     RUN_TEST(test_overspeed_threshold_is_derived_from_limit_and_factor);
