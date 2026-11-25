@@ -1,0 +1,585 @@
+{
+  "schema_version": "1.0",
+  "board": {
+    "marking": "精控 JK2501",
+    "pcb_date_marking": "20260109",
+    "module": "ESP32-S3-WROOM-1-N16R8",
+    "flash_mb": 16,
+    "psram_mb": 8,
+    "manufacturer_legal_name": null,
+    "original_schematic_found": false
+  },
+  "document_type": "evidence-tagged functional connectivity; NOT electrical netlist",
+  "sources": {
+    "S1": "JK2501.pdf pp.1–2 (user supplied; origin not independently authenticated)",
+    "S2": "User PCB front/back photographs, markings JK2501 20260109",
+    "S3": "https://documentation.espressif.com/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf",
+    "S4": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX3483-MAX3491.pdf",
+    "S5": "User report 2026-11-25 (bench result; not cross-checked against photos)",
+    "S6": "s3_poll / s3_ibus serial logs 2026-11-25 (phase1-ibus/logs, phase2-modbus/logs)"
+  },
+  "module_pins": [
+    {
+      "module_pad": 1,
+      "gpio": null,
+      "pin_name": "GND",
+      "function": "0V",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 2,
+      "gpio": null,
+      "pin_name": "3V3",
+      "function": "3.3V",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 3,
+      "gpio": null,
+      "pin_name": "EN",
+      "function": "RESET",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 4,
+      "gpio": 4,
+      "pin_name": "IO4",
+      "function": "X1",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 5,
+      "gpio": 5,
+      "pin_name": "IO5",
+      "function": "X2",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 6,
+      "gpio": 6,
+      "pin_name": "IO6",
+      "function": "X3",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 7,
+      "gpio": 7,
+      "pin_name": "IO7",
+      "function": "X4",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 8,
+      "gpio": 15,
+      "pin_name": "IO15",
+      "function": "485RX",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 9,
+      "gpio": 16,
+      "pin_name": "IO16",
+      "function": "485TX",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 10,
+      "gpio": 17,
+      "pin_name": "IO17",
+      "function": "X5",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 11,
+      "gpio": 18,
+      "pin_name": "IO18",
+      "function": "X6",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 12,
+      "gpio": 8,
+      "pin_name": "IO8",
+      "function": "X7",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 13,
+      "gpio": 19,
+      "pin_name": "IO19",
+      "function": "X8",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 14,
+      "gpio": 20,
+      "pin_name": "IO20",
+      "function": "X9",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 15,
+      "gpio": 3,
+      "pin_name": "IO3",
+      "function": "Y1",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 16,
+      "gpio": 46,
+      "pin_name": "IO46",
+      "function": "X10",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 17,
+      "gpio": 9,
+      "pin_name": "IO9",
+      "function": "X11",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 18,
+      "gpio": 10,
+      "pin_name": "IO10",
+      "function": "X12",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 19,
+      "gpio": 11,
+      "pin_name": "IO11",
+      "function": "X13",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 20,
+      "gpio": 12,
+      "pin_name": "IO12",
+      "function": "X14",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 21,
+      "gpio": 13,
+      "pin_name": "IO13",
+      "function": "Y2",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 22,
+      "gpio": 14,
+      "pin_name": "IO14",
+      "function": "232RX",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 23,
+      "gpio": 21,
+      "pin_name": "IO21",
+      "function": "analog_input",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 24,
+      "gpio": 47,
+      "pin_name": "IO47",
+      "function": "analog_input",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 25,
+      "gpio": 48,
+      "pin_name": "IO48",
+      "function": "232TX",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 26,
+      "gpio": 45,
+      "pin_name": "IO45",
+      "function": "X16",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 27,
+      "gpio": 0,
+      "pin_name": "IO0",
+      "function": "BOOT",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 28,
+      "gpio": 35,
+      "pin_name": "IO35",
+      "function": "PSRAM_reserved",
+      "evidence": [
+        "S1",
+        "S3"
+      ],
+      "notes": "S1 PCB function blank; module PSRAM reserved"
+    },
+    {
+      "module_pad": 29,
+      "gpio": 36,
+      "pin_name": "IO36",
+      "function": "PSRAM_reserved",
+      "evidence": [
+        "S1",
+        "S3"
+      ],
+      "notes": "S1 PCB function blank; module PSRAM reserved"
+    },
+    {
+      "module_pad": 30,
+      "gpio": 37,
+      "pin_name": "IO37",
+      "function": "PSRAM_reserved",
+      "evidence": [
+        "S1",
+        "S3"
+      ],
+      "notes": "S1 PCB function blank; module PSRAM reserved"
+    },
+    {
+      "module_pad": 31,
+      "gpio": 38,
+      "pin_name": "IO38",
+      "function": "X15",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 32,
+      "gpio": 39,
+      "pin_name": "IO39",
+      "function": "Y3",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 33,
+      "gpio": 40,
+      "pin_name": "IO40",
+      "function": "Y4",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 34,
+      "gpio": 41,
+      "pin_name": "IO41",
+      "function": "Y5",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 35,
+      "gpio": 42,
+      "pin_name": "IO42",
+      "function": "Y6",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 36,
+      "gpio": 44,
+      "pin_name": "IO44",
+      "function": "UART0_RX",
+      "evidence": [
+        "S1",
+        "S3"
+      ],
+      "notes": "S1 PCA text U0TXD appears on both rows; direction from module datasheet"
+    },
+    {
+      "module_pad": 37,
+      "gpio": 43,
+      "pin_name": "IO43",
+      "function": "UART0_TX",
+      "evidence": [
+        "S1",
+        "S3"
+      ],
+      "notes": "S1 PCA text U0TXD appears on both rows; direction from module datasheet"
+    },
+    {
+      "module_pad": 38,
+      "gpio": 2,
+      "pin_name": "IO2",
+      "function": "I2C_SCL",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 39,
+      "gpio": 1,
+      "pin_name": "IO1",
+      "function": "I2C_SDA",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 40,
+      "gpio": null,
+      "pin_name": "GND",
+      "function": "0V",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    },
+    {
+      "module_pad": 41,
+      "gpio": null,
+      "pin_name": "EPAD",
+      "function": "0V",
+      "evidence": [
+        "S1"
+      ],
+      "notes": null
+    }
+  ],
+  "interfaces": {
+    "rs485": {
+      "rx_gpio": 15,
+      "tx_gpio": 16,
+      "transceiver_photo_reading": "MAX3485ESA (tentative)",
+      "de_re_gpio": null,
+      "auto_direction": null,
+      "termination_ohms": null,
+      "galvanic_isolation": null,
+      "terminal_top_to_bottom": [
+        "+24V",
+        "GND",
+        "A",
+        "B",
+        "GND"
+      ],
+      "evidence": [
+        "S1",
+        "S2"
+      ],
+      "driver_J5_proposed": {
+        "board_pin3_labeled_A": "J5 B (Pin5)",
+        "board_pin4_labeled_B": "J5 A (Pin4)",
+        "board_pin5_GND": "J5 SGND (Pin3)",
+        "status": "VALIDATED_READ_ONLY_2026-11-25",
+        "notes": "Board silkscreen A/B is swapped relative to ZLAC8015D J5. Straight A->A/B->B gave TIMEOUT x2 (log 261125-104715); swapped wiring passed s3_poll FC03 (log 261125-105535). SGND uses board RS485 pin 5 GND (next to B), not pin 2. Superseded proposal: A->A, B->B, SGND->GND pin 2.",
+        "evidence": [
+          "S5",
+          "S6"
+        ]
+      },
+      "validation": "Verify polarity, common reference and read-only Modbus before motion"
+    },
+    "rs232": {
+      "rx_gpio": 14,
+      "tx_gpio": 48,
+      "terminal_top_to_bottom": [
+        "+24V",
+        "GND",
+        "TX",
+        "RX",
+        "GND"
+      ],
+      "transceiver_photo_reading": "MAX3232 family tentative",
+      "evidence": [
+        "S1",
+        "S2"
+      ]
+    },
+    "digital_inputs": {
+      "mapping": {
+        "X1": 4,
+        "X2": 5,
+        "X3": 6,
+        "X4": 7,
+        "X5": 17,
+        "X6": 18,
+        "X7": 8,
+        "X8": 19,
+        "X9": 20,
+        "X10": 46,
+        "X11": 9,
+        "X12": 10,
+        "X13": 11,
+        "X14": 12,
+        "X15": 38,
+        "X16": 45
+      },
+      "active_low": true,
+      "opto_photo": "4 x PS2801-4; exact per-channel wiring unverified"
+    },
+    "digital_outputs": {
+      "mapping": {
+        "Y1": 3,
+        "Y2": 13,
+        "Y3": 39,
+        "Y4": 40,
+        "Y5": 41,
+        "Y6": 42
+      },
+      "active_low": true,
+      "driver_photo": "TD62084AFG; exact topology and limits unverified"
+    },
+    "analog": {
+      "gpio_candidates": [
+        21,
+        47
+      ],
+      "terminal_labels": [
+        "AI1",
+        "AI2"
+      ],
+      "channel_mapping": null,
+      "document_range_v": [
+        0,
+        10
+      ],
+      "warning": "GPIO21 and GPIO47 are not native ADC pins; external conversion or document error unresolved"
+    },
+    "i2c": {
+      "sda_gpio": 1,
+      "scl_gpio": 2
+    },
+    "usb": {
+      "uart0_rx_gpio": 44,
+      "uart0_tx_gpio": 43,
+      "bridge_model": "CH340",
+      "usb_only_power": false,
+      "usb_only_power_evidence": "user observation",
+      "bridge_model_evidence": [
+        "S5"
+      ]
+    },
+    "power": {
+      "nominal_input_v": 24,
+      "max_input_v": null,
+      "header_labels": [
+        "+5V",
+        "GND",
+        "+3.3V"
+      ],
+      "regulator_topology": null
+    }
+  },
+  "ibus": {
+    "rx_gpio": 18,
+    "connection": "MCU-side header pin IO18; X6 opto terminal must stay empty",
+    "status": "VALIDATED_2026-11-25",
+    "validation": "s3_ibus test passed 2026-11-25 (RECEIVING, ~130 frames/s, CH2/CH4/CH7 follow sticks/switch, no STALE)",
+    "power": "+5V from MCU-side power header (+5V/GND/+3.3V)",
+    "evidence": [
+      "S5",
+      "S6"
+    ],
+    "previous_status": "BLOCKED_PENDING_VALIDATION (superseded 2026-11-25)",
+    "avoid_gpio": [
+      35,
+      36,
+      37
+    ]
+  },
+  "constraints": [
+    "Do not treat functional edges as verified PCB nets",
+    "Do not infer RS485 isolation from I/O optocouplers",
+    "Do not apply 24V to MCU GPIO",
+    "No live motor actuation until failsafe, direction, and power validation complete"
+  ]
+}
