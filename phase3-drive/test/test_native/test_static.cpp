@@ -230,9 +230,11 @@ static void test_s3_drive_envs() {
         TEST_ASSERT_FALSE_MESSAGE(std::regex_search(*env, std::regex(R"(PIN=3[5-7]\b)")), "GPIO35–37 被 PSRAM 佔用");
         TEST_ASSERT_TRUE_MESSAGE(env->find("RS485_DE_PIN") == std::string::npos, "綠板不設 DE/RE 腳");
         TEST_ASSERT_TRUE_MESSAGE(env->find("CDC_ON_BOOT") == std::string::npos, "不得依賴 USB CDC（拔掉 Type-C 也要能跑）");
-        // (d) FAILSAFE_VERIFIED 是否寫進 s3 環境由使用者決定；決定之前兩個環境都不得出現，決定後須同步更新此測試。
-        TEST_ASSERT_TRUE_MESSAGE(env->find("FAILSAFE_VERIFIED") == std::string::npos, "FAILSAFE_VERIFIED（待決 (d)）");
     }
+    // (d) 使用者聲明（2026-11-25）綠板 T2 (a)(b) 已在 s3_drive_dry 通過，指定 s3_drive_live 加 FAILSAFE_VERIFIED=1。
+    // 乾跑環境仍不得有此旗標。之後若要改動，須由使用者明確同意並同步更新此測試（規則 19）。
+    TEST_ASSERT_TRUE_MESSAGE(live.find("-DFAILSAFE_VERIFIED=1\n") != std::string::npos, "s3_drive_live 需要 FAILSAFE_VERIFIED=1");
+    TEST_ASSERT_TRUE_MESSAGE(dry.find("FAILSAFE_VERIFIED") == std::string::npos, "s3_drive_dry 不得有 FAILSAFE_VERIFIED");
     TEST_ASSERT_TRUE(dry.find("-DDRIVE_DRYRUN\n") != std::string::npos);
     TEST_ASSERT_TRUE_MESSAGE(dry.find("DRIVE_LIVE") == std::string::npos, "s3_drive_dry 不得含寫入傳輸");
     TEST_ASSERT_TRUE(live.find("-DDRIVE_LIVE\n") != std::string::npos);

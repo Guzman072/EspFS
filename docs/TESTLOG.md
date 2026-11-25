@@ -301,3 +301,58 @@
   - 速度、轉矩皆 0.0。
   - 溫度：左 21 °C、右 20 °C。
 - **非 0 的 fail／crc／timeout／echo**：無。
+
+### JK2501 `s3_drive_dry`：開機、解鎖與混控、T2 (a)(b)
+來源：使用者回報＋已與 log 核對。本節只寫 log 看得到的數字。log 在 `phase3-drive/logs/`。
+
+**`device-monitor-261125-114105.log`：PROBE_FAIL**
+- log 內有兩次開機，中間一次 `rst:0x1 (POWERON)`。兩次都是 594 ms `BOOT`、699 ms 讀 20A0h `TIMEOUT`，接著 `FAULT_STOP` → `LATCHED reason=PROBE_FAIL detail=0x1`。
+- 沒有任何寫入：沒有 `# DRY W`，也沒有 FC 06／10 的 T 行。
+- 使用者回報：當時驅動器斷電。
+
+**`device-monitor-261125-114653.log`：開機、解鎖與混控、T2 (a)**
+- **開機**：log 內有兩次開機，中間一次 `rst:0x1 (POWERON)`。兩次都印出 `# BOOT STOP confirmed 20A2h=0000`，然後進入 `DISARMED`（703 ms、712 ms）。
+- **交易**：T 行 260 筆全部 OK。
+- **解鎖**：
+  - 第一次：10,973 ms `ARMING`，10,994 ms `ARMED`。
+  - 第二次：66,366 ms `ARMING`，66,387 ms `ARMED`。
+  - 每次解鎖前都印出 `# would-block: 2000h readback=0 want 500`。乾跑不會真的寫入，所以驅動器上的 2000h 仍是 0。
+- **混控**：C 行 476 筆，都是混控格式（9 欄）；`right_target_rpm` 範圍 −0.7 到 90.0。
+- **T2 (a)：遙控器關機**：
+  - 32,951 ms 的 R 行讀到 CH2／CH7／CH4＝1500／1000／1501，`values_unchanged_ms`＝110；之後的 R 行一路增加（1110、2110、3110…）。
+  - 由此推算，值從 32,841 ms 起不再變動；32,869 ms 進入 `DISARMING`，相差 28 ms。
+  - 32,879 ms `DISARMED`；`# STOP L ms=21`、`# STOP R ms=21`。
+- **第二次解除**：69,080 ms `DISARMING`，69,090 ms `DISARMED`，`# STOP L／R ms=20`。69,980 ms 的 R 行 CH7＝1000，`values_unchanged_ms`＝63（值仍在變動）。log 看不出是否關機。
+- **通道實測範圍**：取自 R 行（約每秒 1 筆，共 75 筆），CH2 另取自 C 行（476 筆）。
+  - CH2 1000–1997、CH7 1000–2000、CH4 1000–2000，都沒有超出 1000–2000。
+  - 沒有出現 `CH_OUT_OF_RANGE`。
+
+**`device-monitor-261125-115858.log`：T2 (b)（片段，沒有開機段）**
+- **解鎖**：734,476 ms `ARMING`，734,507 ms `ARMED`。
+- **i-BUS 中斷**：
+  - 738,114 ms 印出 `# T2 STALE observed after 250 ms without frames`（R 行 `frame_age_ms`＝250）。
+  - 31 ms 後，738,145 ms 進入 `DISARMING`。
+  - 10 ms 後，738,155 ms 進入 `DISARMED`；`# STOP L ms=20`、`# STOP R ms=20`。
+- **i-BUS 恢復後**：
+  - 779,205 ms 恢復 `RECEIVING` 時印出 `# ARM blocked: SWA already on, switch it off first`。
+  - 片段內只有一組 `ARMING`／`ARMED`（734,476／734,507 ms），之後沒有再進入 `ARMING`；整段 R 行的 CH7 都是 2000。
+- **STALE／RECEIVING 交替**：738,114 ms 第一次 `STALE` 之後，R 行的狀態依序是：
+
+  | ms | 狀態 |
+  |---|---|
+  | 738,877 | RECEIVING |
+  | 739,776 | STALE |
+  | 779,205 | RECEIVING |
+  | 780,687 | STALE |
+  | 780,995 | RECEIVING |
+  | 799,755 | STALE |
+  | 800,087 | RECEIVING |
+  | 800,606 | STALE |
+  | 802,447 | RECEIVING |
+  | 805,138 | STALE |
+  | 820,480 | RECEIVING |
+  | 822,439 | STALE（到 log 結尾 838,439 ms 仍是 STALE） |
+
+  原因待使用者確認，使用者推測可能是拔插或接觸不良。
+
+**判定**：使用者聲明（2026-11-25）綠板 T2 (a)(b) 通過，並指定 `s3_drive_live` 加入 `-DFAILSAFE_VERIFIED=1`。

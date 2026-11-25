@@ -272,7 +272,7 @@ BOOT ─(預檢通過)→ DISARMED ─(解鎖條件全滿足)→ ARMING ─(序�
 | 環境 | 寫入 | 主要旗標 |
 |---|---|---|
 | `s3_drive_dry` | 只印出（`# DRY W`），沒有寫入傳輸 | `DRIVE_DRYRUN` |
-| `s3_drive_live` | 啟用寫入傳輸 | `DRIVE_LIVE`，**刻意不含 `FAILSAFE_VERIFIED`**，見下方待決項 (d) |
+| `s3_drive_live` | 啟用寫入傳輸 | `DRIVE_LIVE`、`FAILSAFE_VERIFIED=1`（使用者聲明 2026-11-25，見下方 (d)） |
 
 - **腳位**：沿用 2026-11-25 實測通過的設定（`docs/TESTLOG.md`）：i-BUS RX＝GPIO18（排針側，X6 空著）；RS485 RX＝GPIO15、TX＝GPIO16，沒有 DE/RE 腳；`MODBUS_MAX_ATTEMPTS=1`。
 - **通道**：沿用使用者 2026-11-23 指定的同一組遙控器與接收器：油門 CH2（`THROTTLE_CH=1`）、SWA CH7（`ARM_CH=6`）、轉向 CH4（`STEER_CH=3`）。`s3_ibus` 實測 CH2、CH4、CH7 跟著動。
@@ -295,6 +295,6 @@ BOOT ─(預檢通過)→ DISARMED ─(解鎖條件全滿足)→ ARMING ─(序�
 
 ### 待使用者決定
 
-- **(d)** `s3_drive_live` 是否加入 `-DFAILSAFE_VERIFIED=1`（docs/CI.md 待決項）。目前沒有加入，`src/config.h` 會讓 `s3_drive_live` 編譯失敗；靜態測試同時檢查兩個 s3 環境都沒有此旗標。決定加入時，須同步更新 `test_s3_drive_envs`。
+- **(d) 已決定（2026-11-25）**：使用者聲明綠板 T2 (a)(b) 已在 `s3_drive_dry` 看到並判定通過，指定 `s3_drive_live` 加入 `-DFAILSAFE_VERIFIED=1`（規則 19）。實測紀錄見 `docs/TESTLOG.md` 2026-11-25。`test_s3_drive_envs` 改為檢查 `s3_drive_live` 有此旗標、`s3_drive_dry` 沒有。燒錄 live 仍須使用者另行明確確認。
 - **(c) 的範圍**：目前嚴格採用 1000–2000，沒有容差。若遙控器的端點或微調讓值略超出，會造成解除（偏安全）。
 - **esp32dev 是否也開啟 strictSafety**：開啟會改變已驗證的 `dryrun`／`live` 行為。
