@@ -229,3 +229,25 @@
 - J5 SGND 接綠板 RS485 **第 5 腳 GND**（B 旁），不用第 2 腳。
 - A＝第 3 腳、B＝第 4 腳。
 - 依據：量測 ⑥ 顯示 SGND 與驅動器 DC− 隔離。
+
+### JK2501 `s3_ibus`：通過
+來源：使用者回報＋已與 log 核對。
+- **燒錄**：SUCCESS（esptool v4.5.1，ESP32-S3 rev v0.2），不需按 BOOT／EN，連接埠 `/dev/ttyUSB0`。
+- **log**：`phase1-ibus/logs/device-monitor-261125-102813.log`、`device-monitor-261125-104338.log`。
+- **第一份 log**：
+  - 先 WAITING 約 12 s（31,692 ms 起；第一筆 RECEIVING 在 44,092 ms）。
+  - 訊框計數每 100 ms 增加 13（約 130 個／s）。
+- **通道**：CH2、CH4 隨搖桿變化，CH7 隨開關變化。
+- **訊框**：兩份 log 都沒有 STALE，沒有掉訊框。
+
+### JK2501 `s3_poll`：未通過（原因待查）
+來源：使用者回報＋已與 log 核對。
+- **log**：`phase2-modbus/logs/device-monitor-261125-104715.log`。
+- **過程**：
+  - 602 ms BOOT。
+  - ID 1、ID 4 讀 20A0h 各 1 次，皆 TIMEOUT（707 ms、812 ms）。
+  - `LATCHED reason=TIMEOUT`。
+- **STAT**：`tx=2 fail=2 crc=0 timeout=2 echo=0 partial_echo=0`（rejected=0、busy=0）。
+- **接線**：SGND→第 5 腳，A→第 3 腳，B→第 4 腳。
+- **驅動器上電與燈號**：待補（使用者未回報）。
+- 另有 `device-monitor-261125-105535.log`，STAT 同樣是 tx=2、timeout=2、LATCHED；使用者未說明這份 log，未列入判定。
