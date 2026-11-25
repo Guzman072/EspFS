@@ -5,6 +5,14 @@
 #include "guard.h"
 #include "transport_serial2.h"
 
+// 腳位由編譯旗標指定（S3 綠板：RX=15、TX=16）；預設值與 esp32dev 原本相同（RX=16、TX=17）。
+#ifndef RS485_RX_PIN
+#define RS485_RX_PIN 16
+#endif
+#ifndef RS485_TX_PIN
+#define RS485_TX_PIN 17
+#endif
+
 namespace {
 constexpr uint32_t kQuietUs = 2000;         // 送出前至少靜默 2 ms
 constexpr uint32_t kQuietGiveUpMs = 100;    // 線路一直忙碌就放棄，不硬送
@@ -12,7 +20,7 @@ constexpr uint32_t kQuietGiveUpMs = 100;    // 線路一直忙碌就放棄，不
 
 void Serial2Transport::begin() {
     Serial2.setRxBufferSize(256);
-    Serial2.begin(115200, SERIAL_8N1, 16, 17);
+    Serial2.begin(115200, SERIAL_8N1, RS485_RX_PIN, RS485_TX_PIN);
 }
 
 // 清空接收緩衝，並確認連續 2 ms 沒有新位元組。

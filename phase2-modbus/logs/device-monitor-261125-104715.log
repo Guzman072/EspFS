@@ -1,0 +1,39 @@
+# s3_poll JK2501 read-only (FC03), RX=GPIO15 TX=GPIO16
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,602,BOOT
+S,602,PROBE
+T,707,01,03,20A0,1,TIMEOUT,1,-,-
+T,812,04,03,20A0,1,TIMEOUT,1,-,-
+S,813,LATCHED
+# LATCHED reason=TIMEOUT
+# STAT,1012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,2012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,3012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,4012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,5012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,6012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,7012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,8012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,9012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,10012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,11012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,12012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,13012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,14012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,15012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,16012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,17012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,18012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,19012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,20012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,21012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,22012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,23012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,24012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,25012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,26012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,27012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,28012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,29012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,30012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0
+# STAT,31012,state=LATCHED,tx=2,fail=2,crc=0,timeout=2,echo=0,partial_echo=0,rejected=0,busy=0

@@ -11,7 +11,12 @@ constexpr uint32_t kQuietBeforeTxMs = 2;
 constexpr uint32_t kResponseTimeoutMs = 100;
 constexpr uint32_t kSilenceEndMs = 2;
 constexpr uint32_t kRetryIntervalMs = 20;
-constexpr uint8_t kMaxAttempts = 3;
+// s3_poll 以 -DMODBUS_MAX_ATTEMPTS=1 關閉重送（出錯只記錄）；預設 3，esp32dev 不變。
+#ifndef MODBUS_MAX_ATTEMPTS
+#define MODBUS_MAX_ATTEMPTS 3
+#endif
+static_assert(MODBUS_MAX_ATTEMPTS >= 1 && MODBUS_MAX_ATTEMPTS <= 3, "MODBUS_MAX_ATTEMPTS 須為 1–3");
+constexpr uint8_t kMaxAttempts = MODBUS_MAX_ATTEMPTS;
 constexpr uint8_t kLatchAfterFailures = 3;
 
 struct TxSpec {

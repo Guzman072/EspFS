@@ -5,7 +5,7 @@
 
 class Serial2Transport : public ITransport {
 public:
-    void begin();  // 115200 8N1，RX=GPIO16、TX=GPIO17
+    void begin();  // 115200 8N1，RX=RS485_RX_PIN、TX=RS485_TX_PIN（預設 GPIO16、GPIO17）
 
     // 第三層防線：功能碼不是 0x03 就不寫，回 0 並計數。
     // 寫入前清空接收緩衝並確認線路至少靜默 2 ms；寫入後 flush（等 TX 完成）。

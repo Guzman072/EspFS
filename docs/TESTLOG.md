@@ -200,3 +200,104 @@
 - log 沒有遙控器實際關機的時間戳，無法量出從關機到失效保護生效的延遲。
 - **轉矩電流觀察**：每次停機回到 `DISARMED` 後第一筆回授，左輪為 −5.2 至 −4.9 A，絕對值均超過 3.0 A 手動門檻，右輪為 0.2 至 2.2 A。其後兩輪轉矩電流讀值皆為 0.0 A，輪速仍繼續下降。
 - **推論、未驗證**：`200Eh=0x07` 之後馬達可能不再出力，輪子靠滑行減速。
+
+## 2026-11-25
+
+### JK2501 全斷電量測（Issue #8）
+來源：使用者回報 2026-11-25，未與照片核對。
+
+| # | 量測 | 結果 |
+|---|---|---|
+| ① | RS485 第 2 腳（GND）對第 5 腳（GND） | < 1 Ω |
+| ② | RS485 第 2 腳對綠板電源負極 | < 1 Ω |
+| ③ | RS485 第 2 腳對 MAX3485 第 5 腳（GND） | < 1 Ω |
+| ④ | RS485 第 2 腳對 RS232 第 2、5 腳 | < 1 Ω（全板共地） |
+| ⑤ | 綠板負極對電池負極 | < 1 Ω |
+| ⑥ | J5 Pin 3（SGND）對驅動器 DC− | 電阻檔 OL（隔離） |
+| ⑦ | RS485 第 1 腳（+24V）對電源正極 | 0.2 Ω（該腳已封） |
+| ⑧ | RS485 第 1 腳（+24V）對第 2 腳（GND） | OL |
+| ⑨ | MCU 側 IO18 排針對 RS485 第 1 腳（+24V） | OL |
+
+**另記（使用者回報 2026-11-25，未與照片核對）**
+- 電池以電表實測 **25.2 V**（XT60 端）；6S（平衡線 7 針）。Issue #8 所寫的 29.4 V（7S）不適用。
+- Phase 0 停止門檻改為 **25.5 V**（使用者同意）。
+- 只插 USB-C 不會供電，須先接電池。
+- 接收器由 MCU 上方電源排針（+5V／GND／+3.3V）取 5V。
+- 24V 路徑沒有限流或保險絲；端子未清空拍照（使用者決定不做）。
+
+### 使用者決定（2026-11-25）：J5 接線
+- J5 SGND 接綠板 RS485 **第 5 腳 GND**（B 旁），不用第 2 腳。
+- ~~A＝第 3 腳、B＝第 4 腳。~~ **已更正（2026-11-25）**：這樣接 `s3_poll` 會 TIMEOUT。實際有效的接法是 A、B 對調，見下方 `s3_poll` 一節。
+- 依據：量測 ⑥ 顯示 SGND 與驅動器 DC− 隔離。
+
+### JK2501 `s3_ibus`：通過
+來源：使用者回報＋已與 log 核對。
+- **燒錄**：SUCCESS（esptool v4.5.1，ESP32-S3 rev v0.2），不需按 BOOT／EN，連接埠 `/dev/ttyUSB0`。
+- **log**：`phase1-ibus/logs/device-monitor-261125-102813.log`、`device-monitor-261125-104338.log`。
+- **第一份 log**：
+  - 先 WAITING 約 12 s（31,692 ms 起；第一筆 RECEIVING 在 44,092 ms）。
+  - 訊框計數每 100 ms 增加 13（約 130 個／s）。
+- **通道**：CH2、CH4 隨搖桿變化，CH7 隨開關變化。
+- **訊框**：兩份 log 都沒有 STALE，沒有掉訊框。
+
+### JK2501 `s3_poll`：通過（A、B 對調後）
+來源：使用者回報＋已與 log 核對。
+
+**第一次執行：未通過（A、B 反接）**
+- **log**：`phase2-modbus/logs/device-monitor-261125-104715.log`。
+- **過程**：
+  - 602 ms BOOT。
+  - ID 1、ID 4 讀 20A0h 各 1 次，皆 TIMEOUT（707 ms、812 ms）。
+  - `LATCHED reason=TIMEOUT`。
+- **STAT**：`tx=2 fail=2 crc=0 timeout=2 echo=0 partial_echo=0`（rejected=0、busy=0）。
+- **接線**：SGND→第 5 腳，綠板第 3 腳（標 A）→J5 A，第 4 腳（標 B）→J5 B。
+- **驅動器上電與燈號**：待補（使用者未回報）。
+- **原因**：A、B 反了。之後只對調 A、B 就通過；程式與腳位（RX＝GPIO15、TX＝GPIO16）都沒改。
+
+**第二次執行：通過（A、B 對調）**
+- **log**：`phase2-modbus/logs/device-monitor-261125-105535.log`。
+- **更正（2026-11-25）**：先前寫這份 log「STAT 同樣是 tx=2、timeout=2、LATCHED」，是誤讀。前 4 行（`STAT` 8012–11012 ms，LATCHED）是上一次失敗執行（104715）留下的尾巴；接著板子斷電重啟（`rst:0x1 (POWERON)`），之後才是這次執行。
+- **有效接法**（使用者回報 2026-11-25）：
+
+  | 綠板 RS485 端子 | 接到驅動器 J5 |
+  |---|---|
+  | 第 3 腳（板上標 A） | B（Pin 5） |
+  | 第 4 腳（板上標 B） | A（Pin 4） |
+  | 第 5 腳 GND（B 旁） | SGND（Pin 3） |
+
+  綠板絲印的 A／B 與驅動器 J5 的 A／B 相反。
+- **交易**：
+  - 598 筆交易全部 OK，全部是 FC 0x03，每筆 1 次就成功。
+  - rtt 4–5 ms，平均 4.8 ms（4 ms 121 筆、5 ms 477 筆）。
+- **最後一筆 STAT**（24,000 ms）：`state=POLLING tx=588 fail=0 crc=0 timeout=0 echo=0 partial_echo=0 rejected=0 busy=0`。
+- **讀值**：
+  - 20A0h＝0x65C9（26057）。
+  - 2001h＝1（Slave ID）、2002h＝2（115200）。
+  - 2000h＝0（`comm_offline_ms`）。
+  - `error_code` 左右 119 筆全為 0；`hall_state` 左右皆 1；`motor_state` 左右皆 0；速度與轉矩皆 0。
+  - 馬達溫度：左 21 °C、右 20 °C。
+  - `dc_voltage` 27.90–27.92 V，與電表的 25.2 V（不同時間量）不一致，見 `PROJECT.md` 項 25。
+- **驗收條件達成**：20A0h、2001h、2002h 都讀得回來；echo、crc、timeout 皆為 0。
+
+**第三次：5 分鐘唯讀擷取（代理擷取，2026-11-25 11:04–11:09）**
+來源：已與 log 核對。
+- **log**：`phase2-modbus/logs/device-monitor-261125-110405.log`。
+- **擷取方式**：
+  - 先確認沒有程式佔用 `/dev/ttyUSB0`（fuser、lsof 與 /proc 掃描皆為空）。
+  - 用 `script -qc "timeout 300 pio device monitor -p /dev/ttyUSB0 -b 115200 --filter log2file" /dev/null` 擷取，輸出有「Logging an output to」。
+  - 只讀序列埠，沒有燒錄，也沒有送出任何資料。
+  - 板子沒有重置：擷取從開機後 506,636 ms 接續到 806,294 ms，log 內沒有 `rst:`，也沒有 BOOT 行。
+- **交易**：
+  - T 行 7,495 筆，status 全部是 OK（其他 status 0 筆）。
+  - fc 全部是 03，attempts 全部是 1。
+  - rtt 最小 4 ms、平均 4.86 ms、最大 5 ms（4 ms 1,079 筆、5 ms 6,416 筆）。
+- **STAT**：
+  - 共 300 行，每一行都是 `fail=0 crc=0 timeout=0 echo=0 partial_echo=0 rejected=0 busy=0`。
+  - 最後一筆：`# STAT,806000,state=POLLING,tx=20138,fail=0,crc=0,timeout=0,echo=0,partial_echo=0,rejected=0,busy=0`。
+  - 計數從開機累計，所以開機以來 20,138 筆交易都沒有失敗。
+- **dc_voltage**：27.90–27.92 V（27.90 V 204 筆、27.91 V 1,218 筆、27.92 V 77 筆）。
+- **其他讀值**：各 1,499 筆，全程不變。
+  - `error_code` 左右全 0；`hall_state` 左右皆 1；`motor_state` 左右皆 0。
+  - 速度、轉矩皆 0.0。
+  - 溫度：左 21 °C、右 20 °C。
+- **非 0 的 fail／crc／timeout／echo**：無。

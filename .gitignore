@@ -1,3 +1,4 @@
 .pio/
 graphify-out/
 docs/*.pdf
+docs/hardware/*.pdf
