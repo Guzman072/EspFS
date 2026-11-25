@@ -211,6 +211,67 @@ static void test_dryrun_build_has_no_write_transport_sources() {
     const std::string p3 = noComments(slurp("platformio.ini"));
     const std::string dry = envSection(p3, "dryrun");
     TEST_ASSERT_TRUE(dry.find("build_src_filter = -<*> +<drive_main.cpp>") != std::string::npos);
+    const std::string s3dry = envSection(p3, "s3_drive_dry");
+    TEST_ASSERT_TRUE(s3dry.find("build_src_filter = -<*> +<drive_main.cpp>") != std::string::npos);
+}
+
+// ---- 綠板 JK2501（s3_drive_dry／s3_drive_live，DESIGN.md §12） ----
+static void test_s3_drive_envs() {
+    const std::string p3 = noComments(slurp("platformio.ini"));
+    const std::string dry = envSection(p3, "s3_drive_dry"), live = envSection(p3, "s3_drive_live");
+    TEST_ASSERT_TRUE_MESSAGE(!dry.empty() && !live.empty(), "找不到 s3_drive_dry／s3_drive_live");
+    for (const std::string* env : {&dry, &live}) {
+        for (const char* flag : {"-DTHROTTLE_CH=1\n", "-DARM_CH=6\n", "-DSTEER_CH=3\n", "-DIBUS_RX_PIN=18\n",
+                                 "-DRS485_RX_PIN=15\n", "-DRS485_TX_PIN=16\n", "-DMODBUS_MAX_ATTEMPTS=1\n",
+                                 "-DDRIVE_STRICT_SAFETY=1\n", "board = jk2501_n16r8\n",
+                                 "build_src_filter = -<*> +<drive_main.cpp>"}) {
+            TEST_ASSERT_TRUE_MESSAGE(env->find(flag) != std::string::npos, flag);
+        }
+        TEST_ASSERT_FALSE_MESSAGE(std::regex_search(*env, std::regex(R"(PIN=3[5-7]\b)")), "GPIO35–37 被 PSRAM 佔用");
+        TEST_ASSERT_TRUE_MESSAGE(env->find("RS485_DE_PIN") == std::string::npos, "綠板不設 DE/RE 腳");
+        TEST_ASSERT_TRUE_MESSAGE(env->find("CDC_ON_BOOT") == std::string::npos, "不得依賴 USB CDC（拔掉 Type-C 也要能跑）");
+    }
+    // (d) 使用者聲明（2026-11-25）綠板 T2 (a)(b) 已在 s3_drive_dry 通過，指定 s3_drive_live 加 FAILSAFE_VERIFIED=1。
+    // 乾跑環境仍不得有此旗標。之後若要改動，須由使用者明確同意並同步更新此測試（規則 19）。
+    TEST_ASSERT_TRUE_MESSAGE(live.find("-DFAILSAFE_VERIFIED=1\n") != std::string::npos, "s3_drive_live 需要 FAILSAFE_VERIFIED=1");
+    TEST_ASSERT_TRUE_MESSAGE(dry.find("FAILSAFE_VERIFIED") == std::string::npos, "s3_drive_dry 不得有 FAILSAFE_VERIFIED");
+    TEST_ASSERT_TRUE(dry.find("-DDRIVE_DRYRUN\n") != std::string::npos);
+    TEST_ASSERT_TRUE_MESSAGE(dry.find("DRIVE_LIVE") == std::string::npos, "s3_drive_dry 不得含寫入傳輸");
+    TEST_ASSERT_TRUE(live.find("-DDRIVE_LIVE\n") != std::string::npos);
+    TEST_ASSERT_TRUE_MESSAGE(live.find("DRIVE_DRYRUN") == std::string::npos, "s3_drive_live 不得含 dryrun 旗標");
+    // 只有 live 與 s3_drive_live 可以有 DRIVE_LIVE
+    std::smatch m;
+    std::string rest = p3;
+    int liveEnvs = 0;
+    static const std::regex head(R"(\[env:([A-Za-z0-9_]+)\])");
+    while (std::regex_search(rest, m, head)) {
+        const std::string name = m[1];
+        if (envSection(p3, name).find("DRIVE_LIVE") != std::string::npos) {
+            TEST_ASSERT_TRUE_MESSAGE(name == "live" || name == "s3_drive_live", name.c_str());
+            ++liveEnvs;
+        }
+        rest = m.suffix();
+    }
+    TEST_ASSERT_EQUAL_INT(2, liveEnvs);
+    // esp32dev 環境不得啟用 strict（是否擴大到 esp32dev 由使用者決定）
+    for (const char* env : {"live", "dryrun", "native", "native_dryrun"})
+        TEST_ASSERT_TRUE_MESSAGE(envSection(p3, env).find("DRIVE_STRICT_SAFETY") == std::string::npos, env);
+}
+static void test_strict_safety_wired_and_usb_not_required() {
+    const std::string c = slurp("src/config.h");
+    TEST_ASSERT_TRUE(c.find("#ifdef DRIVE_STRICT_SAFETY") != std::string::npos);
+    const std::string m = slurp("src/drive_main.cpp");
+    TEST_ASSERT_TRUE(m.find("c.strictSafety = kStrictSafety;") != std::string::npos);
+    static const std::regex waitUsb(R"(while\s*\(\s*!\s*Serial\s*\))");
+    TEST_ASSERT_FALSE_MESSAGE(std::regex_search(m, waitUsb), "不得等待 USB 序列埠");
+    TEST_ASSERT_FALSE(std::regex_search(slurp("src/ibus_remote.h"), waitUsb));
+}
+static void test_third_layer_allows_only_whitelisted_write_addresses() {
+    // 第三層防線（transport）：FC 0x06 只放行 2000h／200Dh／200Eh，FC 0x10 只放行 2088h 數量 2；其他位址一律拒絕。
+    const std::string t = slurp("lib/drive_ctl/drive_frame_check.cpp");
+    TEST_ASSERT_TRUE(t.find("addr == 0x2000 || addr == 0x200D || addr == 0x200E") != std::string::npos);
+    TEST_ASSERT_TRUE(t.find("addr == 0x2088 && b[4] == 0x00 && b[5] == 0x02") != std::string::npos);
+    TEST_ASSERT_TRUE(t.find("default:\n            return false;") != std::string::npos);
 }
 
 void run_static_tests() {
@@ -226,4 +287,7 @@ void run_static_tests() {
     RUN_TEST(test_steer_channel_enabled_in_dryrun_and_live);
     RUN_TEST(test_config_h_blocks_compilation_until_user_specifies);
     RUN_TEST(test_dryrun_build_has_no_write_transport_sources);
+    RUN_TEST(test_s3_drive_envs);
+    RUN_TEST(test_strict_safety_wired_and_usb_not_required);
+    RUN_TEST(test_third_layer_allows_only_whitelisted_write_addresses);
 }

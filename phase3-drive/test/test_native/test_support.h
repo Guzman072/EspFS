@@ -66,6 +66,8 @@ struct FakeDriver {
     bool dropWrites = false;
     bool corruptMultiReply = false;
     bool exceptionOnWrite = false;
+    bool stuckStatus = false;         // true：200Eh 寫入不改變 20A2h（模擬停止指令沒有生效）
+    bool ignoreOfflineWrite = false;  // true：2000h 寫入回應正常，但值沒有改變（模擬讀回不符）
     std::vector<uint16_t> dropReadAddrs;
 
     FakeDriver() {
@@ -105,7 +107,11 @@ struct FakeDriver {
         if (exceptionOnWrite) return {withCrc({q[0], static_cast<uint8_t>(fc | 0x80), 0x02}), 2};
         if (fc == 0x06) {
             const uint16_t val = static_cast<uint16_t>((q[4] << 8) | q[5]);
-            if (addr == 0x200E) {
+            if (addr == 0x200E && stuckStatus) {
+                // 狀態字不變
+            } else if (addr == 0x2000 && ignoreOfflineWrite) {
+                // 值不變
+            } else if (addr == 0x200E) {
                 if (val == 8) statusWord = 0x4040;
                 else if (val == 7) statusWord = 0x0000;
                 else if (val == 5) statusWord = 0x8080;
@@ -166,6 +172,12 @@ struct Rig {
         c.armCh = kArm;
         c.leftSign = 1;
         c.rightSign = 1;
+        return c;
+    }
+    // 綠板（s3_drive_*）設定：strictSafety 開啟 (a)(b)(c)。
+    static FsmConfig strictConfig() {
+        FsmConfig c = defaultConfig();
+        c.strictSafety = true;
         return c;
     }
     // 不覆寫正負號：用 FsmConfig 的預設值，也就是 drive_config.h 的 kLeftSign／kRightSign。

@@ -36,6 +36,9 @@ struct FsmConfig {
     int rightSign = kRightSign;
     bool failsafeVerified = true;  // live：T2 通過後由使用者以 FAILSAFE_VERIFIED=1 指定；dryrun 不需要
     int steerCh = -1;    // 負值代表只用油門
+    // 綠板（s3_drive_*，DRIVE_STRICT_SAFETY）啟用的額外安全項（DESIGN.md §12）。預設關閉：esp32dev 行為不變。
+    // (a) 解鎖前重寫 2000h 並讀回，不符就不解鎖；(b) 開機先送停止指令並讀回 20A2h 確認；(c) 通道值超出範圍就解除／不解鎖。
+    bool strictSafety = false;
 };
 
 class DriveFsm {
@@ -105,4 +108,8 @@ private:
     void doFault(FaultReason reason, uint32_t detail);
     void faultFromStatus(Status s);
     bool readOne(uint16_t addr, uint16_t& value);
+    // strictSafety
+    bool channelsInRange(int* badChannel = nullptr, unsigned* badValue = nullptr);
+    bool bootStop();                 // (b)；false＝已進入 LATCHED
+    bool rewriteOfflineBeforeArm();  // (a)；false＝不解鎖（已停用或已 LATCHED）
 };

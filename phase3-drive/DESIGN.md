@@ -264,3 +264,37 @@ BOOT ─(預檢通過)→ DISARMED ─(解鎖條件全滿足)→ ARMING ─(序�
 - 混控版 `C,ms,throttle,target_rpm,left_raw,right_raw,steer_rpm,left_target_rpm,right_target_rpm` 附加限於 ±|T| 的 `S` 和各輪經 ±90 限幅、尚未套斜坡及馬達符號的目標。既有 `target_rpm` 欄在混控時代表兩輪斜坡後的平均指令。`left_raw`、`right_raw` 已套用斜坡、馬達符號及解析度換算。這些新增欄位適用於兩個啟用混控的環境。
 - **斷線停止延遲**：直行與轉向的懸空停機時間及量測限制見 §4。RS485 中斷時驅動器是否按 `2000h` 停機仍待驗證，500 ms 讀回值只確認設定。落地前依規則 26 處理轉向停止時的位移與車身轉角。
 - **3.0 A 的適用性也需要重新評估。** 轉向、方向反轉及雙輪不同步減速時，各輪電流峰值可能不同。經同意的懸空驗證應分輪記錄 20ADh／20AEh 的絕對峰值與對應動作，任一輪超過現行 3.0 A 手動門檻即停止並回報。落地負載待另外評估。
+
+## 12. 綠板 JK2501（ESP32-S3）移植
+
+使用者於 2026-11-25 授權綠板做第三階段寫入（來源：使用者本人；記錄見 `PROJECT.md`）。新增兩個環境，程式沿用 `drive_main.cpp` 與同一個狀態機，只有旗標不同。
+
+| 環境 | 寫入 | 主要旗標 |
+|---|---|---|
+| `s3_drive_dry` | 只印出（`# DRY W`），沒有寫入傳輸 | `DRIVE_DRYRUN` |
+| `s3_drive_live` | 啟用寫入傳輸 | `DRIVE_LIVE`、`FAILSAFE_VERIFIED=1`（使用者聲明 2026-11-25，見下方 (d)） |
+
+- **腳位**：沿用 2026-11-25 實測通過的設定（`docs/TESTLOG.md`）：i-BUS RX＝GPIO18（排針側，X6 空著）；RS485 RX＝GPIO15、TX＝GPIO16，沒有 DE/RE 腳；`MODBUS_MAX_ATTEMPTS=1`。
+- **通道**：沿用使用者 2026-11-23 指定的同一組遙控器與接收器：油門 CH2（`THROTTLE_CH=1`）、SWA CH7（`ARM_CH=6`）、轉向 CH4（`STEER_CH=3`）。`s3_ibus` 實測 CH2、CH4、CH7 跟著動。
+- **板型**：`boards/jk2501_n16r8.json`（16 MB flash、OPI PSRAM），不使用 GPIO35–37。
+- **不變的部分**：速度上限、超速倍率、左右正負號、轉向參數、寫入白名單（規則 16）與黑名單、第三層防線、停機序列。第三層防線 `isAllowedDriveFrameShape` 對 FC 0x06 只放行 2000h、200Dh、200Eh，對 FC 0x10 只放行 2088h 數量 2；數值範圍由 `WriteGuard` 檢查。
+
+### 額外安全項（`DRIVE_STRICT_SAFETY` → `FsmConfig::strictSafety`）
+
+只在 s3 兩個環境開啟。esp32dev 的 `dryrun`／`live` 不開，行為不變；是否擴大到 esp32dev 待使用者決定。對應 `docs/CI.md` 的待決檢查：
+
+| 項目 | live 行為 | dryrun 行為 |
+|---|---|---|
+| (a) 解鎖前重寫 2000h 並讀回 | SWA 解鎖條件與驅動器狀態檢查都通過後，先寫 `2000h＝500` 再讀回；不等於 500 → `# DISABLED`（不解鎖，須重開機）。寫入或讀取失敗 → 故障路徑 | 寫入只印出；讀回不符只顯示 `# would-block`，照常解鎖 |
+| (b) 開機先送停止並讀回 | 探測 20A0h 成功後，先送 `2088h＝0,0`、`200Eh＝0x07`，再讀 20A2h；兩軸都是解軸才印 `# BOOT STOP confirmed`，否則 `# DISABLED`。寫入失敗 → 故障路徑（急停） | 寫入只印出；讀回不是解軸只顯示 `# would-block` |
+| (c) 通道值超出範圍 | 油門、SWA、轉向任一通道不在 1000–2000（`kChannelValidMin`／`kChannelValidMax`）：`ARMED` 時印 `# DISARM reason=CH_OUT_OF_RANGE` 並走正常解除序列；`DISARMED` 時不解鎖。恢復後須再看過 SWA 關閉才能解鎖；範圍外的 SWA 值不算「關閉」 | 同左 |
+
+- **i-BUS 逾時或失聯**：沿用 §4，250 ms 沒有新訊框即 `STALE` → 解除，`WAITING` 也視為沒有資料。驅動器端另有 2000h 掉線保護（500 ms）。
+- **FC 0x06 回音**：綠板 `s3_poll` 2026-11-25 在 20,138 筆讀取中量到 `echo=0`、`partial_echo=0`（`docs/TESTLOG.md`）。所以 FC 0x06 的回應視為驅動器的真正確認，沿用 §1.4「實作註記（回音）」的處理方式，沒有回音不算故障。回音與確認仍無法在協定上區分，因此 (a)(b) 與解鎖後的 20A2h 讀回仍保留。
+- **不需要 USB 序列埠**：`Serial` 是 UART0（CH340），`setup()` 不等待序列埠連線，拔掉 Type-C 照常執行；靜態測試檢查沒有等待序列埠的迴圈，也沒有 `ARDUINO_USB_CDC_ON_BOOT`。
+
+### 待使用者決定
+
+- **(d) 已決定（2026-11-25）**：使用者聲明綠板 T2 (a)(b) 已在 `s3_drive_dry` 看到並判定通過，指定 `s3_drive_live` 加入 `-DFAILSAFE_VERIFIED=1`（規則 19）。實測紀錄見 `docs/TESTLOG.md` 2026-11-25。`test_s3_drive_envs` 改為檢查 `s3_drive_live` 有此旗標、`s3_drive_dry` 沒有。燒錄 live 仍須使用者另行明確確認。
+- **(c) 的範圍**：目前嚴格採用 1000–2000，沒有容差。若遙控器的端點或微調讓值略超出，會造成解除（偏安全）。
+- **esp32dev 是否也開啟 strictSafety**：開啟會改變已驗證的 `dryrun`／`live` 行為。
