@@ -8,9 +8,9 @@
 #include "write_guard.h"
 #include "write_rules.h"
 
-static WriteGuard G90;  // limitRaw = 90（2022h＝1；上限 90 r/min，使用者決定 2026-11-23）
+static WriteGuard guardAtLimit;  // limitRaw = 60（2022h＝1；上限 60 r/min，使用者決定 2026-11-25）
 
-static void setUp_guard() { G90.setLimitRaw(90); }
+static void setUp_guard() { guardAtLimit.setLimitRaw(60); }
 
 static std::vector<uint8_t> w06(uint8_t id, uint16_t addr, uint16_t val) {
     return withCrc({id, 0x06, static_cast<uint8_t>(addr >> 8), static_cast<uint8_t>(addr & 0xFF),
@@ -22,7 +22,7 @@ static std::vector<uint8_t> w10(uint8_t id, uint16_t start, uint16_t qty, uint8_
                     static_cast<uint8_t>(static_cast<uint16_t>(l) >> 8), static_cast<uint8_t>(static_cast<uint16_t>(l) & 0xFF),
                     static_cast<uint8_t>(static_cast<uint16_t>(r) >> 8), static_cast<uint8_t>(static_cast<uint16_t>(r) & 0xFF)});
 }
-static Status chk(const std::vector<uint8_t>& f) { return G90.check(f.data(), f.size()); }
+static Status chk(const std::vector<uint8_t>& f) { return guardAtLimit.check(f.data(), f.size()); }
 static std::vector<uint8_t> r03(uint8_t id, uint16_t addr, uint16_t n) {
     return withCrc({id, 0x03, static_cast<uint8_t>(addr >> 8), static_cast<uint8_t>(addr & 0xFF),
                     static_cast<uint8_t>(n >> 8), static_cast<uint8_t>(n & 0xFF)});
@@ -44,9 +44,9 @@ static void test_allow_2000_200_to_1000() {
 static void test_allow_2088_two_regs_within_limit() {
     setUp_guard();
     TEST_ASSERT_EQUAL(Status::OK, chk(w10(1, 0x2088, 2, 4, 0, 0)));
-    TEST_ASSERT_EQUAL(Status::OK, chk(w10(1, 0x2088, 2, 4, 90, 90)));
-    TEST_ASSERT_EQUAL(Status::OK, chk(w10(1, 0x2088, 2, 4, -90, 90)));
-    TEST_ASSERT_EQUAL(Status::OK, chk(w10(1, 0x2088, 2, 4, 90, -90)));
+    TEST_ASSERT_EQUAL(Status::OK, chk(w10(1, 0x2088, 2, 4, 60, 60)));
+    TEST_ASSERT_EQUAL(Status::OK, chk(w10(1, 0x2088, 2, 4, -60, 60)));
+    TEST_ASSERT_EQUAL(Status::OK, chk(w10(1, 0x2088, 2, 4, 60, -60)));
 }
 // ---------- 寫入白名單：每一條拒絕 ----------
 static void test_reject_200D_other_values() {
@@ -76,10 +76,10 @@ static void test_reject_2088_wrong_count_or_start() {
 }
 static void test_reject_2088_value_over_limit() {
     setUp_guard();
-    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, chk(w10(1, 0x2088, 2, 4, 91, 0)));
-    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, chk(w10(1, 0x2088, 2, 4, 0, 91)));
-    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, chk(w10(1, 0x2088, 2, 4, -91, 0)));
-    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, chk(w10(1, 0x2088, 2, 4, 0, -91)));
+    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, chk(w10(1, 0x2088, 2, 4, 61, 0)));
+    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, chk(w10(1, 0x2088, 2, 4, 0, 61)));
+    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, chk(w10(1, 0x2088, 2, 4, -61, 0)));
+    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, chk(w10(1, 0x2088, 2, 4, 0, -61)));
     TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, chk(w10(1, 0x2088, 2, 4, 3000, 3000)));
     TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, chk(w10(1, 0x2088, 2, 4, -32768, 0)));
 }
@@ -89,11 +89,11 @@ static void test_limit_follows_resolution_and_defaults_to_zero() {
     auto one = w10(1, 0x2088, 2, 4, 1, 0);
     TEST_ASSERT_EQUAL(Status::OK, g.check(zero.data(), zero.size()));
     TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, g.check(one.data(), one.size()));
-    g.setLimitRaw(limitRawFor(10));  // 2022h＝A → 900
-    auto f900 = w10(1, 0x2088, 2, 4, 900, -900);
-    auto f901 = w10(1, 0x2088, 2, 4, 901, 0);
-    TEST_ASSERT_EQUAL(Status::OK, g.check(f900.data(), f900.size()));
-    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, g.check(f901.data(), f901.size()));
+    g.setLimitRaw(limitRawFor(10));  // 2022h＝A → 600
+    auto atLimit = w10(1, 0x2088, 2, 4, 600, -600);
+    auto overLimit = w10(1, 0x2088, 2, 4, 601, 0);
+    TEST_ASSERT_EQUAL(Status::OK, g.check(atLimit.data(), atLimit.size()));
+    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, g.check(overLimit.data(), overLimit.size()));
 }
 static void test_reject_slave_id_not_1() {
     setUp_guard();
@@ -128,7 +128,7 @@ static void test_every_unlisted_single_register_is_rejected() {
     int accepted = 0;
     for (uint32_t a = 0; a <= 0xFFFF; a += 1) {
         auto f = w06(1, static_cast<uint16_t>(a), 3);
-        if (G90.check(f.data(), f.size()) == Status::OK) ++accepted;
+        if (guardAtLimit.check(f.data(), f.size()) == Status::OK) ++accepted;
     }
     TEST_ASSERT_EQUAL_INT_MESSAGE(1, accepted, "FC06 值 3 只有 200Dh 會通過");  // 2000h 的 3 超出 200–1000、200Eh 的 3 不在集合
 }
@@ -138,7 +138,7 @@ static void test_all_256_function_codes() {
     int passedFc = 0;
     for (int fc = 0; fc <= 0xFF; ++fc) {
         auto f = withCrc({1, static_cast<uint8_t>(fc), 0x20, 0xA0, 0x00, 0x01});
-        const Status s = G90.check(f.data(), f.size());
+        const Status s = guardAtLimit.check(f.data(), f.size());
         if (fc == 0x03) {
             TEST_ASSERT_EQUAL(Status::OK, s);
             ++passedFc;
@@ -153,24 +153,24 @@ static void test_guarded_write_sends_nothing_for_rejected_frames() {
     setUp_guard();
     DriveMock t;
     auto bad = w06(1, 0x2031, 5);
-    TEST_ASSERT_EQUAL(Status::REJECTED_REG, guardedWrite(t, G90, bad.data(), bad.size()));
+    TEST_ASSERT_EQUAL(Status::REJECTED_REG, guardedWrite(t, guardAtLimit, bad.data(), bad.size()));
     auto bad2 = w10(2, 0x2088, 2, 4, 0, 0);
-    TEST_ASSERT_EQUAL(Status::REJECTED_ID, guardedWrite(t, G90, bad2.data(), bad2.size()));
+    TEST_ASSERT_EQUAL(Status::REJECTED_ID, guardedWrite(t, guardAtLimit, bad2.data(), bad2.size()));
     TEST_ASSERT_EQUAL_UINT32(0, t.totalWritten);
     TEST_ASSERT_EQUAL_UINT32(0, t.driveWrites.size());
     auto good = w06(1, 0x200E, 7);
-    TEST_ASSERT_EQUAL(Status::OK, guardedWrite(t, G90, good.data(), good.size()));
+    TEST_ASSERT_EQUAL(Status::OK, guardedWrite(t, guardAtLimit, good.data(), good.size()));
     TEST_ASSERT_EQUAL_UINT32(1, t.driveWrites.size());  // FC 0x06 走 writeDrive
     auto rd = r03(1, 0x20A0, 1);
-    TEST_ASSERT_EQUAL(Status::OK, guardedWrite(t, G90, rd.data(), rd.size()));
+    TEST_ASSERT_EQUAL(Status::OK, guardedWrite(t, guardAtLimit, rd.data(), rd.size()));
     TEST_ASSERT_EQUAL_UINT32(1, t.driveWrites.size());  // FC 0x03 走 write()，不經 writeDrive
 }
 static void test_length_and_crc_rules() {
     setUp_guard();
     auto f = w06(1, 0x200E, 7);
-    TEST_ASSERT_EQUAL(Status::REJECTED_LEN, G90.check(f.data(), 7));
-    TEST_ASSERT_EQUAL(Status::REJECTED_LEN, G90.check(f.data(), 1));
-    TEST_ASSERT_EQUAL(Status::REJECTED_LEN, G90.check(nullptr, 0));
+    TEST_ASSERT_EQUAL(Status::REJECTED_LEN, guardAtLimit.check(f.data(), 7));
+    TEST_ASSERT_EQUAL(Status::REJECTED_LEN, guardAtLimit.check(f.data(), 1));
+    TEST_ASSERT_EQUAL(Status::REJECTED_LEN, guardAtLimit.check(nullptr, 0));
     f[7] ^= 0xFF;
     TEST_ASSERT_EQUAL(Status::REJECTED_CRC, chk(f));
     auto m = w10(1, 0x2088, 2, 4, 0, 0);
@@ -208,7 +208,7 @@ static void test_phase2_guard_still_rejects_the_new_addresses() {
         TEST_ASSERT_EQUAL(Status::REJECTED_ADDR, checkRequest(f.data(), f.size()));
         TEST_ASSERT_EQUAL(Status::REJECTED_ADDR, readOnlyGuard().check(f.data(), f.size()));
         TEST_ASSERT_FALSE(rangeAllowed(a, 1));
-        TEST_ASSERT_EQUAL(Status::OK, G90.check(f.data(), f.size()));  // Phase 3 的 guard 允許
+        TEST_ASSERT_EQUAL(Status::OK, guardAtLimit.check(f.data(), f.size()));  // Phase 3 的 guard 允許
     }
     for (uint8_t fc : {uint8_t(0x06), uint8_t(0x10)}) {
         auto f = withCrc({1, fc, 0x20, 0x0E, 0x00, 0x07});
@@ -280,25 +280,25 @@ static void test_builders_reject_bad_parameters_and_leave_output_alone() {
     TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, buildSetOfflineTime(1, 199, f));
     TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, buildSetOfflineTime(1, 1001, f));
     TEST_ASSERT_EQUAL(Status::REJECTED_ID, buildSetOfflineTime(3, 500, f));
-    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, buildSetSpeeds(1, 91, 0, 90, f));
-    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, buildSetSpeeds(1, 0, -91, 90, f));
+    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, buildSetSpeeds(1, 61, 0, 60, f));
+    TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, buildSetSpeeds(1, 0, -61, 60, f));
     TEST_ASSERT_EQUAL(Status::REJECTED_VALUE, buildSetSpeeds(1, 0, 0, -1, f));
-    TEST_ASSERT_EQUAL(Status::REJECTED_ID, buildSetSpeeds(5, 0, 0, 90, f));
+    TEST_ASSERT_EQUAL(Status::REJECTED_ID, buildSetSpeeds(5, 0, 0, 60, f));
     TEST_ASSERT_EQUAL_UINT32(99, f.len);
 }
 static void test_every_builder_output_passes_the_guard() {
     setUp_guard();
     WriteFrame f{};
     buildSetSpeedMode(1, f);
-    TEST_ASSERT_EQUAL(Status::OK, G90.check(f.bytes, f.len));
+    TEST_ASSERT_EQUAL(Status::OK, guardAtLimit.check(f.bytes, f.len));
     for (uint16_t w : {0x05, 0x06, 0x07, 0x08}) {
         buildControlWord(1, w, f);
-        TEST_ASSERT_EQUAL(Status::OK, G90.check(f.bytes, f.len));
+        TEST_ASSERT_EQUAL(Status::OK, guardAtLimit.check(f.bytes, f.len));
     }
     buildSetOfflineTime(1, 200, f);
-    TEST_ASSERT_EQUAL(Status::OK, G90.check(f.bytes, f.len));
-    buildSetSpeeds(1, -90, 90, 90, f);
-    TEST_ASSERT_EQUAL(Status::OK, G90.check(f.bytes, f.len));
+    TEST_ASSERT_EQUAL(Status::OK, guardAtLimit.check(f.bytes, f.len));
+    buildSetSpeeds(1, -60, 60, 60, f);
+    TEST_ASSERT_EQUAL(Status::OK, guardAtLimit.check(f.bytes, f.len));
 }
 // ---------- 第三層「形狀」檢查 ----------
 static void test_third_layer_shape_check() {

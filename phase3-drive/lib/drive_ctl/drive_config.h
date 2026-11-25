@@ -5,11 +5,10 @@
 constexpr uint8_t kDriveSlaveId = 1;  // 只允許 ID 1（A6 實測）
 
 // 速度
-// 速度上限（使用者決定，2026-11-23）：30 → 90 r/min；不得超過 100。
-constexpr float kSpeedLimitRpm = 90.0f;
+// 速度上限（使用者決定，2026-11-25）：60 r/min；不得超過 100。
+constexpr float kSpeedLimitRpm = 60.0f;
 static_assert(kSpeedLimitRpm > 0.0f && kSpeedLimitRpm <= 100.0f, "kSpeedLimitRpm 必須在 (0, 100] r/min");
-// 斜坡以「速率」定義（使用者決定，2026-11-23）：每秒 60 r/min＝每 50 ms 加減 3.0 r/min（與上限 30 時 0 → 上限 0.5 s 相同的速率）。
-// 上限改成 90 後 0 → 上限約 1.5 s；不再用「固定 0.5 s」，否則速率會變成每 50 ms 9.0 r/min。
+// 斜坡每秒 60 r/min，每 50 ms 加減 3.0 r/min。0 → 60 r/min 約 1 s。
 constexpr float kSlewRpmPerSec = 60.0f;
 constexpr int kDeadband = 40;                               // i-BUS 計數，設計預設
 constexpr int kIbusCenter = 1500;
@@ -29,6 +28,8 @@ constexpr bool kSteeringEnabled = true;
 constexpr bool kSteeringEnabled = false;
 #endif
 constexpr float kSteeringGain = 0.25f;
+constexpr float kInPlaceMaxRpm = 45.0f;
+static_assert(kInPlaceMaxRpm > 0.0f && kInPlaceMaxRpm <= kSpeedLimitRpm, "原地轉向不得超過單輪速度上限");
 constexpr int kSteerInputSign = 1;                          // 假設右推＝2000，待 dryrun 確認
 static_assert(kSteerInputSign == 1 || kSteerInputSign == -1, "轉向輸入極性只能是 +1 或 -1");
 
@@ -48,6 +49,6 @@ constexpr uint16_t kOfflineWriteMs = 500;                   // 開機若 2000h �
 static_assert(kOfflineWriteMs >= kOfflineMinMs && kOfflineWriteMs <= kOfflineMaxMs, "kOfflineWriteMs 必須在白名單內");
 
 // 故障判斷
-// 實際速度超過「指令上限 × 倍數」就視為超速（使用者決定，2026-11-23：1.5 → 1.2；上限 90 時門檻 108 r/min）。門檻由上限與倍率推導（speed.h 的 overspeedLimit01），不寫死數字。
+// 實際速度超過「指令上限 × 倍數」就視為超速。門檻由 overspeedLimit01 推導。
 constexpr float kOverspeedFactor = 1.2f;
 constexpr int kTorqueStopLimit01A = 30;                     // 3.0 A：懸空測試的手動停止條件（單位 0.1 A），程式只顯示不強制

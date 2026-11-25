@@ -30,7 +30,7 @@ static void test_boot_sequence_and_state() {
     TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
     TEST_ASSERT_TRUE(g.fsm.enabled());
     TEST_ASSERT_EQUAL_INT(1, g.fsm.resolution());
-    TEST_ASSERT_EQUAL_INT16(90, g.fsm.limitRaw());
+    TEST_ASSERT_EQUAL_INT16(60, g.fsm.limitRaw());
     TEST_ASSERT_EQUAL_CHAR('#', g.log.lines[0][0]);
     TEST_ASSERT_TRUE(g.log.has("S,0,BOOT"));
     TEST_ASSERT_TRUE(g.log.has(",DISARMED"));
@@ -105,7 +105,7 @@ static void test_boot_resolution_A() {
     g.d.regs[0x2022] = 10;
     g.bootOnly();
     TEST_ASSERT_EQUAL_INT(10, g.fsm.resolution());
-    TEST_ASSERT_EQUAL_INT16(900, g.fsm.limitRaw());
+    TEST_ASSERT_EQUAL_INT16(600, g.fsm.limitRaw());
 }
 static void test_unset_channels_never_arm() {
     FsmConfig c = Rig::defaultConfig();
@@ -371,14 +371,14 @@ static void test_arming_fails_when_status_not_enabled_afterwards() {
             TEST_ASSERT_TRUE_MESSAGE(static_cast<float>(l - prev) <= allowed, why);
         }
         prevTime = g->t.driveWriteTimes[i];
-        TEST_ASSERT_TRUE(l <= 90);                           // 不超過上限
+        TEST_ASSERT_TRUE(l <= 60);                           // 不超過上限
         if (l > 0 && firstNonZero < 0) firstNonZero = static_cast<int>(g->t.driveWriteTimes[i]);
-        if (l == 90 && firstFull < 0) firstFull = static_cast<int>(g->t.driveWriteTimes[i]);
+        if (l == 60 && firstFull < 0) firstFull = static_cast<int>(g->t.driveWriteTimes[i]);
         prev = l;
     }
-    TEST_ASSERT_EQUAL_INT(90, prev);
+    TEST_ASSERT_EQUAL_INT(60, prev);
     TEST_ASSERT_TRUE(firstNonZero > 0 && firstFull > 0);
-    TEST_ASSERT_TRUE_MESSAGE(firstFull - firstNonZero >= 1350 && firstFull - firstNonZero <= 1550, "0 → 上限約 1.5 s（每 50 ms 3.0 r/min）");
+    TEST_ASSERT_TRUE_MESSAGE(firstFull - firstNonZero >= 850 && firstFull - firstNonZero <= 1050, "0 → 上限約 1 s（每 50 ms 3.0 r/min）");
     uint32_t last = 0;  // 保活：ARMED 期間每個 FC 0x10 寫入的間隔 ≤ 100 ms
     for (size_t i = mark; i < g->t.driveWrites.size(); ++i) {
         if (g->t.driveWrites[i][1] != 0x10) continue;
@@ -392,11 +392,11 @@ static void test_arming_fails_when_status_not_enabled_afterwards() {
     g.bootOnly();
     g.unlockViaSwitch();
     g.r.ch[kThrottle] = 1000;
-    g.run(2500);  // 0 → -90 r/min 約 1.5 s
+    g.run(2500);  // 0 → -60 r/min 約 1 s
     const auto& f = g.t.driveWrites.back();
     TEST_ASSERT_EQUAL_HEX8(0x10, f[1]);
-    TEST_ASSERT_EQUAL_INT16(-900, static_cast<int16_t>((f[7] << 8) | f[8]));    // -90 r/min × 10（2022h＝A）
-    TEST_ASSERT_EQUAL_INT16(-900, static_cast<int16_t>((f[9] << 8) | f[10]));
+    TEST_ASSERT_EQUAL_INT16(-600, static_cast<int16_t>((f[7] << 8) | f[8]));    // -60 r/min × 10（2022h＝A）
+    TEST_ASSERT_EQUAL_INT16(-600, static_cast<int16_t>((f[9] << 8) | f[10]));
 }
 [[maybe_unused]] static void test_swa_off_disarms_in_documented_order() {
     auto g = armedRig();
@@ -641,12 +641,12 @@ static void test_write_mismatch_stops() {
     g->run(100);
     expectLatchedAfterEmergency(*g, mark, FaultReason::WRITE_MISMATCH);
 }
-// 超速門檻＝上限 90 × 1.2 ＝ 108.0 r/min（1080，單位 0.1 r/min）：1080 不超速、1081 超速。
+// 超速門檻＝上限 60 × 1.2 ＝ 72.0 r/min（720，單位 0.1 r/min）：720 不超速、721 超速。
 static void test_overspeed_over_limit_factor_stops_and_boundary_does_not() {
     {
         auto g = armedRig();
-        g->d.actualVelL = 1080;  // 108.0 r/min＝上限 90 的 1.2 倍，不超過
-        g->d.actualVelR = -1080;
+        g->d.actualVelL = 720;  // 72.0 r/min＝上限 60 的 1.2 倍，不超過
+        g->d.actualVelR = -720;
         g->run(300);
         TEST_ASSERT_EQUAL(DriveState::ARMED, g->fsm.state());
     }
@@ -654,10 +654,10 @@ static void test_overspeed_over_limit_factor_stops_and_boundary_does_not() {
         auto g = armedRig();
         g->run(100);
         const size_t mark = g->t.writes.size();
-        (side == 0 ? g->d.actualVelL : g->d.actualVelR) = side == 0 ? 1081 : -1081;
+        (side == 0 ? g->d.actualVelL : g->d.actualVelR) = side == 0 ? 721 : -721;
         g->run(100);
         expectLatchedAfterEmergency(*g, mark, FaultReason::OVERSPEED);
-        TEST_ASSERT_EQUAL_UINT32(1081, g->fsm.faultDetail());
+        TEST_ASSERT_EQUAL_UINT32(721, g->fsm.faultDetail());
     }
 }
 static void test_rejected_request_stops_and_emergency_still_goes_out() {
@@ -703,7 +703,7 @@ static void test_motion_stops_when_comm_dies_even_if_emergency_fails() {
 static void test_no_frame_outside_the_whitelist_and_never_0x06_clear() {
     auto g = armedRig();
     WriteGuard guard;
-    guard.setLimitRaw(90);
+    guard.setLimitRaw(60);
     g->r.ch[kThrottle] = 2000;
     g->run(500);
     g->r.ch[kThrottle] = 1000;
@@ -752,16 +752,16 @@ static void test_real_signs_are_left_plus_and_right_minus() {
     TEST_ASSERT_EQUAL_INT(1, c.leftSign);
     TEST_ASSERT_EQUAL_INT(-1, c.rightSign);
 }
-// 寫入端：右輪寫入取反。每一個 C 行都是 right＝-left，前進（+90,-90）與後退（-90,+90）都檢查。
+// 寫入端：右輪寫入取反。每一個 C 行都是 right＝-left，前進（+60,-60）與後退（-60,+60）都檢查。
 static void test_real_signs_write_right_wheel_reversed() {
     Rig g(Rig::realConfig());
     g.bootOnly();
     g.unlockViaSwitch();
     TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
     g.r.ch[kThrottle] = 2000;
-    g.run(2500);                // 0 → +90 約 1.5 s
+    g.run(2500);                // 0 → +60 約 1 s
     g.r.ch[kThrottle] = 1000;
-    g.run(4000);                // +90 → -90 約 3.0 s
+    g.run(4000);                // +60 → -60 約 2 s
     int checked = 0;
     bool sawForward = false, sawReverse = false;
     for (const std::string& l : g.log.lines) {
@@ -770,40 +770,40 @@ static void test_real_signs_write_right_wheel_reversed() {
         int left = 0, right = 0;
         if (std::sscanf(l.c_str(), "C,%u,%u,%f,%d,%d", &ms, &thr, &cmd, &left, &right) != 5) continue;
         TEST_ASSERT_EQUAL_INT_MESSAGE(left, -right, l.c_str());
-        sawForward = sawForward || (left == 90 && right == -90);
-        sawReverse = sawReverse || (left == -90 && right == 90);
+        sawForward = sawForward || (left == 60 && right == -60);
+        sawReverse = sawReverse || (left == -60 && right == 60);
         ++checked;
     }
     TEST_ASSERT_TRUE(checked > 20);
-    TEST_ASSERT_TRUE_MESSAGE(sawForward, "沒有看到前進的 +90,-90");
-    TEST_ASSERT_TRUE_MESSAGE(sawReverse, "沒有看到後退的 -90,+90");
+    TEST_ASSERT_TRUE_MESSAGE(sawForward, "沒有看到前進的 +60,-60");
+    TEST_ASSERT_TRUE_MESSAGE(sawReverse, "沒有看到後退的 -60,+60");
 #ifdef DRIVE_DRYRUN
-    TEST_ASSERT_TRUE(g.log.has("# DRY W 01 10 20 88 00 02 04 00 5A FF A6"));
-    TEST_ASSERT_TRUE(g.log.has("# DRY W 01 10 20 88 00 02 04 FF A6 00 5A"));
+    TEST_ASSERT_TRUE(g.log.has("# DRY W 01 10 20 88 00 02 04 00 3C FF C4"));
+    TEST_ASSERT_TRUE(g.log.has("# DRY W 01 10 20 88 00 02 04 FF C4 00 3C"));
 #else
-    TEST_ASSERT_TRUE(g.sawFrame("S2088=90,-90"));
-    TEST_ASSERT_TRUE(g.sawFrame("S2088=-90,90"));
+    TEST_ASSERT_TRUE(g.sawFrame("S2088=60,-60"));
+    TEST_ASSERT_TRUE(g.sawFrame("S2088=-60,60"));
 #endif
 }
 // 讀回端：D 行的 actual_velocity 用同一組正負號，油門往上時兩輪都是正值。
 static void test_real_signs_normalize_feedback_in_d_lines() {
     Rig g(Rig::realConfig());
-    g.d.actualVelL = 900;   // 驅動器的原始回授：左輪寫 +90 → +90.0；右輪寫 -90 → -90.0
-    g.d.actualVelR = -900;
+    g.d.actualVelL = 600;   // 驅動器的原始回授：左輪寫 +60 → +60.0；右輪寫 -60 → -60.0
+    g.d.actualVelR = -600;
     g.bootOnly();
     g.unlockViaSwitch();
     g.run(600);             // ARMED 的 D 行每 10 個週期（500 ms）才完整記錄一次
     TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
-    TEST_ASSERT_TRUE(g.log.has(",actual_velocity_L,90.0,r/min"));
-    TEST_ASSERT_TRUE(g.log.has(",actual_velocity_R,90.0,r/min"));
-    TEST_ASSERT_FALSE(g.log.has(",actual_velocity_R,-90.0,r/min"));
+    TEST_ASSERT_TRUE(g.log.has(",actual_velocity_L,60.0,r/min"));
+    TEST_ASSERT_TRUE(g.log.has(",actual_velocity_R,60.0,r/min"));
+    TEST_ASSERT_FALSE(g.log.has(",actual_velocity_R,-60.0,r/min"));
     // 對照：左右同號的設定下，右輪原始值原樣顯示
     Rig h;
-    h.d.actualVelR = -900;
+    h.d.actualVelR = -600;
     h.bootOnly();
     h.unlockViaSwitch();
     h.run(600);
-    TEST_ASSERT_TRUE(h.log.has(",actual_velocity_R,-90.0,r/min"));
+    TEST_ASSERT_TRUE(h.log.has(",actual_velocity_R,-60.0,r/min"));
 }
 
 // 兩個 native 環境都用假遙控器測混控；既有 Rig 預設仍走直行路徑。
@@ -848,15 +848,18 @@ static void test_steering_maps_deadband_and_turns_both_ways_in_forward_and_rever
     g.unlockViaSwitch();
     struct Case { unsigned throttle, steer; float diff, left, right; int rawL, rawR; };
     const Case cases[] = {
-        {1770, 1500, 0, 45, 45, 450, -450},
-        {1770, 1460, 0, 45, 45, 450, -450},
-        {1770, 1540, 0, 45, 45, 450, -450},
-        {1770, 1542, 0.1f, 45.1f, 44.9f, 451, -449},
-        {1770, 1458, -0.1f, 44.9f, 45.1f, 449, -451},
-        {1770, 2000, 22.5f, 67.5f, 22.5f, 675, -225},
-        {1770, 1000, -22.5f, 22.5f, 67.5f, 225, -675},
-        {1230, 2000, 22.5f, -22.5f, -67.5f, -225, 675},
-        {1230, 1000, -22.5f, -67.5f, -22.5f, -675, 225},
+        {1770, 1500, 0, 30, 30, 300, -300},
+        {1770, 1460, 0, 30, 30, 300, -300},
+        {1770, 1540, 0, 30, 30, 300, -300},
+        {1770, 1543, 0.1f, 30.1f, 29.9f, 301, -299},
+        {1770, 1457, -0.1f, 29.9f, 30.1f, 299, -301},
+        {1770, 2000, 15, 45, 15, 450, -150},
+        {2000, 1000, -12, 36, 60, 360, -600},
+        {1230, 1000, 7.5f, -22.5f, -37.5f, -225, 375},
+        {1230, 2000, -7.5f, -37.5f, -22.5f, -375, 225},
+        {1500, 1000, -45, -45, 45, -450, -450},
+        {1500, 2000, 45, 45, -45, 450, 450},
+        {1500, 1540, 0, 0, 0, 0, 0},
     };
     for (const auto& c : cases) {
         g.r.ch[kThrottle] = c.throttle;
@@ -867,30 +870,30 @@ static void test_steering_maps_deadband_and_turns_both_ways_in_forward_and_rever
     }
     // 確認混控經過現有 2088h／2089h 路徑，右輪符號只在送出前套用。
 #ifdef DRIVE_DRYRUN
-    TEST_ASSERT_TRUE(g.log.has("# DRY W 01 10 20 88 00 02 04 FD 5D 00 E1"));
+    TEST_ASSERT_TRUE(g.log.has("# DRY W 01 10 20 88 00 02 04 FE 89 00 E1"));
     TEST_ASSERT_TRUE(g.t.driveWrites.empty());
 #else
-    TEST_ASSERT_TRUE(g.sawFrame("S2088=-675,225"));
+    TEST_ASSERT_TRUE(g.sawFrame("S2088=-375,225"));
 #endif
 }
 
-static void test_steering_limits_each_wheel_and_disallows_pivot() {
+static void test_steering_preserves_wheel_ratio_at_limit_and_clamps_ibus_input() {
     Rig g(steeringConfig());
     g.bootOnly();
     g.unlockViaSwitch();
     g.r.ch[kSteer] = 2400;  // 超出 CH4 上界時仍只用滿行程
-    g.run(100);
-    expectSteeringTarget(g, 0, 0, 0, 0, 0);
-    g.r.ch[kThrottle] = 1586;  // 9 r/min，S 限於 9 r/min
-    g.run(600);
-    expectSteeringTarget(g, 9, 18, 0, 18, 0);
+    g.run(1000);
+    expectSteeringTarget(g, 45, 45, -45, 45, 45);
+    g.r.ch[kThrottle] = 1586;  // 6 r/min，前進差速限於 6 r/min
+    g.run(900);  // 內輪從 −45 r/min 回零至少需要 750 ms
+    expectSteeringTarget(g, 6, 12, 0, 12, 0);
     g.r.ch[kThrottle] = 2000;
     g.run(2000);
-    expectSteeringTarget(g, 22.5f, 90, 67.5f, 90, -68);
+    expectSteeringTarget(g, 12, 60, 36, 60, -36);
     g.r.ch[kThrottle] = 1000;
     g.run(3300);
-    expectSteeringTarget(g, 22.5f, -67.5f, -90, -68, 90);
-    g.r.ch[kThrottle] = 1500;
+    expectSteeringTarget(g, -12, -60, -36, -60, 36);
+    g.r.ch[kThrottle] = g.r.ch[kSteer] = 1500;
     g.run(1700);
     expectSteeringTarget(g, 0, 0, 0, 0, 0);
 }
@@ -913,13 +916,45 @@ static void test_steering_each_wheel_slews_and_holds_its_own_target() {
             const float maxStep = kSlewRpmPerSec * (c.ms - prev.ms) / 100.0f + 1.0f;  // 原始值，含取整誤差
             TEST_ASSERT_FLOAT_WITHIN(maxStep, prev.leftRaw, c.leftRaw);
             TEST_ASSERT_FLOAT_WITHIN(maxStep, prev.rightRaw, c.rightRaw);
-            rightAtTargetFirst |= c.rightRaw == -225 && c.leftRaw > prev.leftRaw && c.leftRaw < 675;
+            rightAtTargetFirst |= c.rightRaw == -150 && c.leftRaw > prev.leftRaw && c.leftRaw < 450;
         }
         prev = c;
         havePrev = true;
     }
     TEST_ASSERT_TRUE(rightAtTargetFirst);
-    expectSteeringTarget(g, 22.5f, 67.5f, 22.5f, 675, -225);
+    expectSteeringTarget(g, 15, 45, 15, 450, -150);
+}
+
+static void test_steering_pivot_to_reverse_changes_targets_but_slews_commands() {
+    Rig g(steeringConfig());
+    g.d.regs[0x2022] = 10;
+    g.bootOnly();
+    g.unlockViaSwitch();
+    g.r.ch[kSteer] = 1000;
+    g.run(1000);
+    expectSteeringTarget(g, -45, -45, 45, -450, -450);
+    const size_t transition = g.log.lines.size();
+    g.r.ch[kThrottle] = 1230;
+    g.run(1700);
+
+    SteeringCommand prev;
+    bool sawTransition = false;
+    for (size_t i = 0; i < g.log.lines.size(); ++i) {
+        SteeringCommand current;
+        if (parseSteeringCommand(g.log.lines[i], current) != 8) continue;
+        if (i >= transition) {
+            TEST_ASSERT_FLOAT_WITHIN(0.01f, -22.5f, current.leftTarget);
+            TEST_ASSERT_FLOAT_WITHIN(0.01f, -37.5f, current.rightTarget);
+            const float maxStep = kSlewRpmPerSec * (current.ms - prev.ms) / 100.0f + 1.0f;
+            TEST_ASSERT_FLOAT_WITHIN(maxStep, prev.leftRaw, current.leftRaw);
+            TEST_ASSERT_FLOAT_WITHIN(maxStep, prev.rightRaw, current.rightRaw);
+            if (!sawTransition) TEST_ASSERT_TRUE(current.rightRaw < 0);
+            sawTransition = true;
+        }
+        prev = current;
+    }
+    TEST_ASSERT_TRUE(sawTransition);
+    expectSteeringTarget(g, 7.5f, -22.5f, -37.5f, -225, 375);
 }
 
 static void test_steering_requires_continuous_overlap_of_both_centered_axes() {
@@ -967,7 +1002,7 @@ static void test_steering_disarms_with_frozen_ch4_and_with_stale_then_rearms_fro
         g.r.ch[kThrottle] = 1770;
         g.r.ch[kSteer] = 2000;
         g.run(1800);
-        expectSteeringTarget(g, 22.5f, 67.5f, 22.5f, 68, -23);
+        expectSteeringTarget(g, 15, 45, 15, 45, -15);
         const size_t frameMark = g.t.writes.size();
         const size_t logMark = g.log.lines.size();
         if (stale) g.r.st = RemoteStatus::STALE;
@@ -1032,8 +1067,8 @@ static void test_steering_logs_append_fields_and_straight_line_keeps_original_fo
             if (commands > 0) {
                 TEST_ASSERT_EQUAL_INT(mixed ? 8 : 5, commands);
                 TEST_ASSERT_EQUAL_UINT(1500, c.throttle);
-                TEST_ASSERT_EQUAL_INT(0, c.leftRaw);
-                TEST_ASSERT_EQUAL_INT(0, c.rightRaw);
+                TEST_ASSERT_EQUAL_INT(c.leftRaw, c.rightRaw);  // 原地轉向時左右馬達原始值同號
+                if (!mixed) TEST_ASSERT_EQUAL_INT(0, c.leftRaw);
                 sawCommand = true;
             }
         }
@@ -1041,10 +1076,10 @@ static void test_steering_logs_append_fields_and_straight_line_keeps_original_fo
     }
 }
 
-// 超速判斷：方向換成「油門往上為正」後取絕對值，108.0 r/min 邊界不超過、1081 超過，任何輪、任何方向都一樣。
+// 超速判斷：方向換成「油門往上為正」後取絕對值，72.0 r/min 邊界不超過、721 超過，任何輪、任何方向都一樣。
 static void expect_symmetric_overspeed(const FsmConfig& config) {
     struct Case { int16_t velL, velR; };
-    const Case ok[] = {{1080, -1080}, {-1080, 1080}, {1080, 1080}, {-1080, -1080}};
+    const Case ok[] = {{720, -720}, {-720, 720}, {720, 720}, {-720, -720}};
     for (const Case& c : ok) {
         Rig g(config);
         g.bootOnly();
@@ -1052,9 +1087,9 @@ static void expect_symmetric_overspeed(const FsmConfig& config) {
         g.d.actualVelL = c.velL;
         g.d.actualVelR = c.velR;
         g.run(300);
-        TEST_ASSERT_EQUAL_MESSAGE(static_cast<int>(DriveState::ARMED), static_cast<int>(g.fsm.state()), "邊界值 108.0 r/min（上限 90 的 1.2 倍）不得超速");
+        TEST_ASSERT_EQUAL_MESSAGE(static_cast<int>(DriveState::ARMED), static_cast<int>(g.fsm.state()), "邊界值 72.0 r/min（上限 60 的 1.2 倍）不得超速");
     }
-    const Case bad[] = {{1081, 0}, {-1081, 0}, {0, 1081}, {0, -1081}};
+    const Case bad[] = {{721, 0}, {-721, 0}, {0, 721}, {0, -721}};
     for (const Case& c : bad) {
         Rig g(config);
         g.bootOnly();
@@ -1064,7 +1099,7 @@ static void expect_symmetric_overspeed(const FsmConfig& config) {
         g.run(300);
         TEST_ASSERT_EQUAL(DriveState::LATCHED, g.fsm.state());
         TEST_ASSERT_EQUAL(FaultReason::OVERSPEED, g.fsm.faultReason());
-        TEST_ASSERT_EQUAL_UINT32(1081, g.fsm.faultDetail());
+        TEST_ASSERT_EQUAL_UINT32(721, g.fsm.faultDetail());
     }
 }
 static void test_overspeed_is_symmetric_with_real_signs() { expect_symmetric_overspeed(Rig::realConfig()); }
@@ -1077,13 +1112,13 @@ static void test_real_signs_end_to_end_feedback_positive_on_both_wheels() {
     g.bootOnly();
     g.unlockViaSwitch();
     g.r.ch[kThrottle] = 2000;
-    g.run(2500);  // 0 → 90 r/min 約 1.5 s
+    g.run(2500);  // 0 → 60 r/min 約 1 s
     TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
-    TEST_ASSERT_EQUAL_INT16(900, g.d.actualVelL);
-    TEST_ASSERT_EQUAL_INT16(-900, g.d.actualVelR);  // 原始回授跟著寫入值（右輪寫 -90）
-    TEST_ASSERT_TRUE(g.log.has(",actual_velocity_L,90.0,r/min"));
-    TEST_ASSERT_TRUE(g.log.has(",actual_velocity_R,90.0,r/min"));
-    TEST_ASSERT_FALSE(g.log.has(",actual_velocity_R,-90.0,r/min"));
+    TEST_ASSERT_EQUAL_INT16(600, g.d.actualVelL);
+    TEST_ASSERT_EQUAL_INT16(-600, g.d.actualVelR);  // 原始回授跟著寫入值（右輪寫 -60）
+    TEST_ASSERT_TRUE(g.log.has(",actual_velocity_L,60.0,r/min"));
+    TEST_ASSERT_TRUE(g.log.has(",actual_velocity_R,60.0,r/min"));
+    TEST_ASSERT_FALSE(g.log.has(",actual_velocity_R,-60.0,r/min"));
 }
 #endif
 
@@ -1106,7 +1141,7 @@ static void test_dryrun_never_sends_a_write() {
     TEST_ASSERT_TRUE(g.log.has("# would-block: fault 0x0200"));
     TEST_ASSERT_TRUE(g.log.has("# DRY W 01 06 20 0D 00 03 53 C8"));
     TEST_ASSERT_TRUE(g.log.has("# DRY W 01 06 20 0E 00 08 E2 0F"));
-    TEST_ASSERT_TRUE(g.log.has("# DRY W 01 10 20 88 00 02 04 00 5A 00 5A"));   // 90 r/min，左右同值
+    TEST_ASSERT_TRUE(g.log.has("# DRY W 01 10 20 88 00 02 04 00 3C 00 3C"));   // 60 r/min，左右同值
 }
 static void test_dryrun_would_block_printed_once_per_code() {
     Rig g;
@@ -1222,8 +1257,9 @@ void run_fsm_tests() {
     RUN_TEST(test_real_signs_write_right_wheel_reversed);
     RUN_TEST(test_real_signs_normalize_feedback_in_d_lines);
     RUN_TEST(test_steering_maps_deadband_and_turns_both_ways_in_forward_and_reverse);
-    RUN_TEST(test_steering_limits_each_wheel_and_disallows_pivot);
+    RUN_TEST(test_steering_preserves_wheel_ratio_at_limit_and_clamps_ibus_input);
     RUN_TEST(test_steering_each_wheel_slews_and_holds_its_own_target);
+    RUN_TEST(test_steering_pivot_to_reverse_changes_targets_but_slews_commands);
     RUN_TEST(test_steering_requires_continuous_overlap_of_both_centered_axes);
     RUN_TEST(test_steering_restarts_center_timer_on_brief_excursion_or_signal_loss);
     RUN_TEST(test_steering_disarms_with_frozen_ch4_and_with_stale_then_rearms_from_zero);
