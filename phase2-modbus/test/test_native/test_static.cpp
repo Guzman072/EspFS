@@ -119,15 +119,19 @@ static void test_no_write_request_builders_exist() {
 
 // ---- JK2501 綠板（S3）只讀環境：編譯期就不能產生寫入（Issue #8） ----
 namespace {
-// 取出 platformio.ini 某個 [env:name] 區段（到下一個 [ 為止），去掉 ; 註解。
+// 先去掉 PlatformIO 的 ; 和 # 註解，再取出 [env:name] 區段。
 std::string envSection(const std::string& ini, const std::string& name) {
+    static const std::regex comment(R"((^|\s)[;#][^\n]*)");
+    const std::string code = std::regex_replace(ini, comment, "$1");
     const std::string head = "[env:" + name + "]";
-    size_t b = ini.find(head);
+    size_t b = code.find(head);
     if (b == std::string::npos) return "";
-    size_t e = ini.find("\n[", b + head.size());
-    std::string sec = ini.substr(b, e == std::string::npos ? std::string::npos : e - b);
-    return std::regex_replace(sec, std::regex(R"(;[^\n]*)"), "");
+    size_t e = code.find("\n[", b + head.size());
+    return code.substr(b, e == std::string::npos ? std::string::npos : e - b);
 }
+
+// Strapping、Y1–Y6、CH340 UART0（43/44）、原生 USB（19/20）。
+const std::regex kReservedPinFlag(R"((^|\s)-D\s*[A-Za-z0-9_]*_PIN\s*=\s*(0|3|13|19|20|39|40|41|42|43|44|45|46)\b)");
 
 bool contains(const std::string& t, const char* s) { return t.find(s) != std::string::npos; }
 
@@ -152,6 +156,7 @@ static void test_s3_poll_env_is_read_only() {
     TEST_ASSERT_TRUE(contains(sec, "-DMODBUS_MAX_ATTEMPTS=1"));
     TEST_ASSERT_FALSE_MESSAGE(contains(sec, "RS485_DE_PIN"), "使用者指定不設 DE/RE 腳");
     TEST_ASSERT_FALSE_MESSAGE(std::regex_search(sec, std::regex(R"(GPIO3[5-7]|PIN=3[5-7]\b)")), "GPIO35–37 被 PSRAM 佔用");
+    TEST_ASSERT_FALSE_MESSAGE(std::regex_search(sec, kReservedPinFlag), "s3_poll 的 *_PIN 不得使用 JK2501 保留腳");
 }
 
 static void test_s3_ibus_env_has_no_modbus() {
@@ -160,6 +165,9 @@ static void test_s3_ibus_env_has_no_modbus() {
     TEST_ASSERT_FALSE(contains(sec, "DRIVE_LIVE"));
     TEST_ASSERT_FALSE(contains(sec, "lib_extra_dirs"));
     TEST_ASSERT_TRUE(contains(sec, "-DIBUS_RX_PIN=18"));
+    TEST_ASSERT_FALSE_MESSAGE(std::regex_search(sec, kReservedPinFlag), "s3_ibus 的 *_PIN 不得使用 JK2501 保留腳");
+    TEST_ASSERT_FALSE_MESSAGE(std::regex_search(sec, std::regex(R"(PIN=3[5-7]\b)")), "GPIO35–37 被 PSRAM 佔用");
+    TEST_ASSERT_FALSE_MESSAGE(contains(sec, "RS485_DE_PIN"), "使用者指定不設 DE/RE 腳");
     const std::string src = slurp("../phase1-ibus/src/main.cpp");
     TEST_ASSERT_FALSE(contains(src, "Serial2"));
     TEST_ASSERT_FALSE(contains(src, "modbus"));

@@ -220,7 +220,14 @@ static void test_s3_drive_envs() {
     const std::string p3 = noComments(slurp("platformio.ini"));
     const std::string dry = envSection(p3, "s3_drive_dry"), live = envSection(p3, "s3_drive_live");
     TEST_ASSERT_TRUE_MESSAGE(!dry.empty() && !live.empty(), "找不到 s3_drive_dry／s3_drive_live");
+    static const std::regex inlineComment(R"(\s[;#][^\n]*)");
+    // Strapping、Y1–Y6、CH340 UART0（43/44）、原生 USB（19/20）。
+    static const std::regex reservedPinFlag(R"((^|\s)-D\s*[A-Za-z0-9_]*_PIN\s*=\s*(0|3|13|19|20|39|40|41|42|43|44|45|46)\b)");
     for (const std::string* env : {&dry, &live}) {
+        const std::string code = std::regex_replace(*env, inlineComment, " ");
+        TEST_ASSERT_FALSE_MESSAGE(std::regex_search(code, reservedPinFlag),
+                                  env == &dry ? "s3_drive_dry 的 *_PIN 不得使用 JK2501 保留腳"
+                                              : "s3_drive_live 的 *_PIN 不得使用 JK2501 保留腳");
         for (const char* flag : {"-DTHROTTLE_CH=1\n", "-DARM_CH=6\n", "-DSTEER_CH=3\n", "-DIBUS_RX_PIN=18\n",
                                  "-DRS485_RX_PIN=15\n", "-DRS485_TX_PIN=16\n", "-DMODBUS_MAX_ATTEMPTS=1\n",
                                  "-DDRIVE_STRICT_SAFETY=1\n", "board = jk2501_n16r8\n",
