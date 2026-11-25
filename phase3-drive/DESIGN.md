@@ -298,3 +298,11 @@ BOOT ─(預檢通過)→ DISARMED ─(解鎖條件全滿足)→ ARMING ─(序�
 - **(d) 已決定（2026-11-25）**：使用者聲明綠板 T2 (a)(b) 已在 `s3_drive_dry` 看到並判定通過，指定 `s3_drive_live` 加入 `-DFAILSAFE_VERIFIED=1`（規則 19）。實測紀錄見 `docs/TESTLOG.md` 2026-11-25。`test_s3_drive_envs` 改為檢查 `s3_drive_live` 有此旗標、`s3_drive_dry` 沒有。燒錄 live 仍須使用者另行明確確認。
 - **(c) 的範圍**：目前嚴格採用 1000–2000，沒有容差。若遙控器的端點或微調讓值略超出，會造成解除（偏安全）。
 - **esp32dev 是否也開啟 strictSafety**：開啟會改變已驗證的 `dryrun`／`live` 行為。
+
+## 13. 綠板板上 log
+
+`ONBOARD_LOG` 預設關閉，只支援 JK2501 的 `s3_drive_*` 環境。單次啟用編譯可在 `phase3-drive/` 執行 `PLATFORMIO_BUILD_FLAGS=-DONBOARD_LOG pio run -e s3_drive_dry`。
+
+- 原有 log 行原樣存入 128 KiB PSRAM 環形緩衝。緩衝滿時以完整行淘汰最舊資料。`ARMED` 只緩存。進入 `DISARMED` 或 `LATCHED` 後追加至 LittleFS 的 `/onboard.log`。正常解除須先完成 §4 的三秒停機取樣，Flash 作業與控制迴圈在同一執行緒，落盤時狀態無法切換為 `ARMED`。
+- 每批附開機序號與當下狀態、故障原因。開機序號由 NVS 保存。LittleFS 掛載失敗時只初始化全空的分割區。log 達 2 MiB 時從最新一批重新記錄，並輸出 `# ONBOARD_LOG rollover`。寫入失敗會保留 PSRAM 資料供下一次狀態切換時追加。尚未落盤的資料會隨斷電消失。
+- Type-C 序列埠為 115200 baud，每 5 秒輸出 `# STATE <狀態> reason=<原因>`。在 `DISARMED` 且停機取樣完成，或在 `LATCHED`，可送 `dump` 或 `erase` 加換行。`dump` 逐行輸出已存檔的原始紀錄，狀態切換會中斷傳輸。`erase` 清除單一 log 檔及當前緩存，開機序號繼續累計。

@@ -48,6 +48,7 @@ public:
     void step();  // 在 loop() 內反覆呼叫
 
     DriveState state() const { return state_; }
+    bool stopSampling() const { return stopSampling_; }
     FaultReason faultReason() const { return fault_; }
     uint32_t faultDetail() const { return faultDetail_; }
     bool enabled() const { return enabled_; }

@@ -25,6 +25,7 @@
   - 其他：電池電壓已實測 25.2 V（項 22）；dc_voltage 差異仍未解（項 25）。
 - **綠板 JK2501（ESP32-S3）移植（Issue #8，分支 `feat/s3-port`）**：2026-11-25 `s3_ibus` 與 `s3_poll` 都通過。`s3_poll` 須把 A、B 對調（綠板第 3 腳〔標 A〕→J5 B，第 4 腳〔標 B〕→J5 A）。[實測來源](docs/TESTLOG.md#2026-11-25)
 - **綠板寫入授權（2026-11-25，來源：使用者本人）**：使用者授權綠板 JK2501 做第三階段寫入（移植 phase3-drive，分支 `feat/s3-drive`），Issue #8 的「綠板寫入禁止」解除，改由新 Issue 追蹤。寫入仍只限規則 16 白名單；燒錄、上電、啟動馬達仍須依規則 10、11、13 另行確認。移植程式在 `phase3-drive` 的 `s3_drive_dry`／`s3_drive_live`（設計見 `phase3-drive/DESIGN.md` §12）。2026-11-25 `s3_drive_dry` 已燒錄實測：開機停止確認、解鎖、混控、T2 (a)(b) 都有 log。使用者聲明 T2 (a)(b) 通過，並指定 `s3_drive_live` 加 `-DFAILSAFE_VERIFIED=1`（規則 19）。T2 (b) 之後 i-BUS 有多次 STALE／RECEIVING 交替，原因待使用者確認。[實測來源](docs/TESTLOG.md#2026-11-25)（`phase3-drive/logs/device-monitor-261125-114105.log`、`-114653.log`、`-115858.log`）
+- **綠板板上 log**：`s3_drive_*` 可用 `-DONBOARD_LOG` 選用，預設關閉。記錄先進 PSRAM，解除後完成輪速取樣或進入 `LATCHED` 才寫入 LittleFS。板上存取及 Type-C 指令待實機驗證。[設計 §13](phase3-drive/DESIGN.md#13-綠板板上-log)
 - **綠板 `s3_drive_live` 已燒錄，L1–L6 在輪子懸空下通過（2026-11-25）**：[實測來源](docs/TESTLOG.md#jk2501-s3_drive_live-懸空測試l1l6)（`phase3-drive/logs/device-monitor-261125-130602.log`、`-131809.log`、`-132054.log`、`-132455.log`）。
   - L1–L4（130602）：開機停止確認、2000h＝500 讀回、解鎖、行駛；SWA、遙控器關機、拔 i-BUS 三種解除的 STOP 為 127–427 ms。
   - 131809：拔 i-BUS 後 254 ms `STALE`，STOP 277 ms；插回後 `ARM blocked: SWA already on`；重新解鎖後 SWA 解除，STOP 30 ms。
