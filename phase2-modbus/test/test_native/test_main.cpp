@@ -9,6 +9,7 @@ void run_report_tests();
 void run_loopback_tests();
 void run_poller_tests();
 void run_static_tests();
+void run_s3_probe_tests();
 
 void setUp() {}
 void tearDown() {}
@@ -24,5 +25,6 @@ int main() {
     run_loopback_tests();
     run_poller_tests();
     run_static_tests();
+    run_s3_probe_tests();
     return UNITY_END();
 }

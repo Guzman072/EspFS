@@ -3,8 +3,12 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+#ifndef IBUS_RX_PIN
+#define IBUS_RX_PIN 18  // 預設與 esp32dev 原本相同；S3 綠板也是 GPIO18（排針側）
+#endif
+
 namespace {
-constexpr int8_t kIbusRx = 18;
+constexpr int8_t kIbusRx = IBUS_RX_PIN;
 constexpr uint32_t kReportIntervalMs = 100;
 constexpr uint32_t kFrameTimeoutMs = 250;
 

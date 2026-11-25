@@ -4,6 +4,10 @@
 #include <IBusBM.h>
 #include "remote_input.h"
 
+#ifndef IBUS_RX_PIN
+#define IBUS_RX_PIN 18  // 預設與 esp32dev 原本相同
+#endif
+
 class IbusRemote : public IRemote {
 public:
     void begin() { receiver_.begin(Serial1, IBUSBM_NOTIMER, kRxPin, -1); }
@@ -30,7 +34,7 @@ public:
     uint32_t frameCount() override { return frames_; }
 
 private:
-    static constexpr int8_t kRxPin = 18;
+    static constexpr int8_t kRxPin = IBUS_RX_PIN;
     static constexpr uint32_t kFrameTimeoutMs = 250;
     IBusBM receiver_;
     uint8_t previousCount_ = 0;

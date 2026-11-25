@@ -117,6 +117,86 @@ static void test_no_write_request_builders_exist() {
     }
 }
 
+// ---- JK2501 綠板（S3）只讀環境：編譯期就不能產生寫入（Issue #8） ----
+namespace {
+// 取出 platformio.ini 某個 [env:name] 區段（到下一個 [ 為止），去掉 ; 註解。
+std::string envSection(const std::string& ini, const std::string& name) {
+    const std::string head = "[env:" + name + "]";
+    size_t b = ini.find(head);
+    if (b == std::string::npos) return "";
+    size_t e = ini.find("\n[", b + head.size());
+    std::string sec = ini.substr(b, e == std::string::npos ? std::string::npos : e - b);
+    return std::regex_replace(sec, std::regex(R"(;[^\n]*)"), "");
+}
+
+bool contains(const std::string& t, const char* s) { return t.find(s) != std::string::npos; }
+
+// 程式碼內的寫入功能碼常數（0x06／0x10 作為數值出現）。註解先去掉。
+bool mentionsWriteFc(const std::string& text) {
+    std::string code = std::regex_replace(text, std::regex(R"(//[^\n]*)"), "");
+    return std::regex_search(code, std::regex(R"(0x0?6\b|0x10\b)", std::regex::icase));
+}
+}  // namespace
+
+static void test_s3_poll_env_is_read_only() {
+    const std::string sec = envSection(slurp("platformio.ini"), "s3_poll");
+    TEST_ASSERT_FALSE_MESSAGE(sec.empty(), "找不到 [env:s3_poll]");
+    TEST_ASSERT_FALSE(contains(sec, "DRIVE_LIVE"));
+    TEST_ASSERT_FALSE(contains(sec, "DRIVE_DRYRUN"));
+    TEST_ASSERT_FALSE(contains(sec, "FAILSAFE_VERIFIED"));
+    TEST_ASSERT_FALSE_MESSAGE(contains(sec, "phase3"), "s3_poll 不得連結 phase3（FC06/FC10 程式所在）");
+    TEST_ASSERT_FALSE(contains(sec, "lib_extra_dirs"));
+    TEST_ASSERT_TRUE(contains(sec, "+<s3_poll_main.cpp>"));
+    TEST_ASSERT_TRUE(contains(sec, "-DRS485_RX_PIN=15"));
+    TEST_ASSERT_TRUE(contains(sec, "-DRS485_TX_PIN=16"));
+    TEST_ASSERT_TRUE(contains(sec, "-DMODBUS_MAX_ATTEMPTS=1"));
+    TEST_ASSERT_FALSE_MESSAGE(contains(sec, "RS485_DE_PIN"), "使用者指定不設 DE/RE 腳");
+    TEST_ASSERT_FALSE_MESSAGE(std::regex_search(sec, std::regex(R"(GPIO3[5-7]|PIN=3[5-7]\b)")), "GPIO35–37 被 PSRAM 佔用");
+}
+
+static void test_s3_ibus_env_has_no_modbus() {
+    const std::string sec = envSection(slurp("../phase1-ibus/platformio.ini"), "s3_ibus");
+    TEST_ASSERT_FALSE_MESSAGE(sec.empty(), "找不到 [env:s3_ibus]");
+    TEST_ASSERT_FALSE(contains(sec, "DRIVE_LIVE"));
+    TEST_ASSERT_FALSE(contains(sec, "lib_extra_dirs"));
+    TEST_ASSERT_TRUE(contains(sec, "-DIBUS_RX_PIN=18"));
+    const std::string src = slurp("../phase1-ibus/src/main.cpp");
+    TEST_ASSERT_FALSE(contains(src, "Serial2"));
+    TEST_ASSERT_FALSE(contains(src, "modbus"));
+}
+
+// s3_poll 連結的 phase2 函式庫：寫入通道只存在 DRIVE_LIVE 區塊內，且沒有 FC06/FC10 常數。
+static void test_phase2_lib_has_no_write_path_without_drive_live() {
+    std::vector<std::string> files;
+    collect("lib", files);
+    collect("src", files);
+    for (const auto& f : files) {
+        std::string text = slurp(f);
+        if (baseName(f) == "transport_serial2.cpp" || baseName(f) == "transport_serial2.h") {
+            // 去掉 #ifdef DRIVE_LIVE ... #endif 區塊後，不得再有 writeDrive 的實作
+            text = std::regex_replace(text, std::regex(R"(#ifdef DRIVE_LIVE[\s\S]*?#endif)"), "");
+        }
+        // 寫入通道的宣告或實作（呼叫不算：guard.cpp 呼叫時，s3_poll 只會走到 ITransport 預設的回 0）。
+        // transport.h 的預設實作就是拒絕（回 0），另由 test_default_write_drive_refuses 類測試涵蓋。
+        static const std::regex def(R"((::\s*writeDrive\s*\()|(\bwriteDrive\s*\(\s*const\b))");
+        if (baseName(f) != "transport.h") {
+            TEST_ASSERT_FALSE_MESSAGE(std::regex_search(text, def), (f + "：DRIVE_LIVE 以外不得有 writeDrive 實作").c_str());
+        }
+        TEST_ASSERT_FALSE_MESSAGE(contains(text, "drive_"), (f + "：不得引用 phase3 drive_ 程式").c_str());
+        TEST_ASSERT_FALSE_MESSAGE(mentionsWriteFc(text), (f + "：出現 0x06／0x10").c_str());
+    }
+    const std::string s3 = slurp("src/s3_poll_main.cpp");
+    TEST_ASSERT_TRUE(contains(s3, "#error"));
+    TEST_ASSERT_FALSE(contains(s3, "Serial2."));
+}
+
+static void test_write_fc_detector_works() {
+    TEST_ASSERT_TRUE(mentionsWriteFc("uint8_t fc = 0x06;"));
+    TEST_ASSERT_TRUE(mentionsWriteFc("x == 0x10)"));
+    TEST_ASSERT_FALSE(mentionsWriteFc("// FC 0x06 comment only"));
+    TEST_ASSERT_FALSE(mentionsWriteFc("0x20A0 0x103"));
+}
+
 void run_static_tests() {
     RUN_TEST(test_detector_catches_forbidden_calls);
     RUN_TEST(test_scanner_finds_the_library_sources);
@@ -124,4 +204,8 @@ void run_static_tests() {
     RUN_TEST(test_src_never_mentions_serial2);
     RUN_TEST(test_real_transport_has_third_layer_check);
     RUN_TEST(test_no_write_request_builders_exist);
+    RUN_TEST(test_write_fc_detector_works);
+    RUN_TEST(test_s3_poll_env_is_read_only);
+    RUN_TEST(test_s3_ibus_env_has_no_modbus);
+    RUN_TEST(test_phase2_lib_has_no_write_path_without_drive_live);
 }
