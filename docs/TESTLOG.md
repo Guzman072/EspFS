@@ -356,3 +356,62 @@
   原因待使用者確認，使用者推測可能是拔插或接觸不良。
 
 **判定**：使用者聲明（2026-11-25）綠板 T2 (a)(b) 通過，並指定 `s3_drive_live` 加入 `-DFAILSAFE_VERIFIED=1`。
+
+### JK2501 `s3_drive_live` 懸空測試（L1–L6）
+來源：log 檔名寫在各小節（`phase3-drive/logs/`）。只記 log 裡看得到的數字；看不到的標「使用者目視，無 log」。
+
+**L1–L4：`device-monitor-261125-130602.log`**
+- **開機停止與 2000h**：
+  - 603 ms 讀 20A0h OK。
+  - 停止指令：612 ms 寫 `2088h＝0,0`、620 ms 寫 `200Eh＝0x07`。628 ms 讀 20A2h＝0000，印出 `# BOOT STOP confirmed 20A2h=0000`。
+  - 開機時 652 ms 讀到 `2000h＝0000`，693 ms 寫入 `2000h＝01F4`（500），701 ms 讀回 01F4。718 ms `DISARMED`。
+- **解鎖前重寫 2000h**：79,293 ms 寫 `2000h＝01F4`，79,302 ms 讀回 01F4。
+- **解鎖序列**：79,310 `200Dh＝3` → 79,319 `2088h＝0,0` → 79,328 `200Eh＝8` → 79,336 讀 20A2h＝4040 → 79,345 `ARMED`。
+- **三次解鎖與停止**：
+
+  | 解鎖期間（ms） | 回授最高（左／右，r/min） | 轉矩最大（左／右，A） | 油門範圍 | `DISARMING`（ms） | 解除當下的 log | `# STOP`（左／右，ms） |
+  |---|---|---|---|---|---|---|
+  | 79,345–130,495 | 90.3／90.3 | 0.7／0.6 | 1000–1997 | 130,495 | 130,695 ms 的 R 行：CH7＝1000，CH2＝1642（值仍在變動）。使用者標示為 SWA | 128／228 |
+  | 137,343–144,544 | 63.0／63.0 | 0.7／0.4 | 1504–1860 | 144,544 | 144,744 ms 的 R 行：CH2／CH7／CH4＝1500／1000／1501，`values_unchanged_ms`＝211。使用者標示為遙控器關機 | 327／427 |
+  | 155,192–160,892 | 47.0／47.0 | 0.7／0.4 | 1503–1781 | 160,892 | 160,878 ms 的 R 行：STALE，`frame_age_ms`＝250。使用者標示為拔除 i-BUS | 127／277 |
+
+- **整份 log 的交易**：T 行 FC 03 共 461 筆、FC 06 共 14 筆、FC 10 共 134 筆，全部 OK。`error_code` 沒有出現非 0。
+
+**i-BUS 拔除與重新解鎖：`device-monitor-261125-131809.log`**
+- **第一次解鎖**：5,567 ms `ARMED`，回授最高 21.4／21.0 r/min。
+- **拔除 i-BUS**：
+  - 17,331 ms 的 R 行 STALE，`frame_age_ms`＝254；`# T2 STALE observed after 254 ms without frames`。
+  - 17,343 ms `DISARMING`，17,361 ms `DISARMED`；`# STOP L ms=277`、`# STOP R ms=277`。
+- **插回後**：39,999 ms 恢復 RECEIVING（CH7＝2000），印出 `# ARM blocked: SWA already on, switch it off first`。
+- **重新解鎖**：53,344 ms `ARMING`，53,387 ms `ARMED`，回授最高 54.1／54.1 r/min。
+- **SWA 解除**：61,271 ms `DISARMING`，61,289 ms `DISARMED`；`# STOP L／R ms=30`。62,013 ms 的 R 行 CH7＝1000。
+- **交易**：T 行 260 筆全部 OK。
+
+**`device-monitor-261125-132054.log`**
+- **第一次解鎖**：4,489–6,328 ms，油門一直是 1504，回授 0。6,328 ms `DISARMING`，`# STOP L／R ms=29`；7,018 ms 的 R 行 CH7＝1000。
+- **第二次解鎖**：9,427 ms `ARMED`，到 log 結尾（32,375 ms）都沒有解除。
+  - 指令最高 71.8 r/min，回授最高 70.8／70.8 r/min，油門範圍 1000–1991。
+- **交易**：T 行 245 筆全部 OK，沒有 TIMEOUT。
+
+**L5：`device-monitor-261125-132455.log`（開頭幾行是上一次執行留下的尾巴，之後有一次 `rst:`）**
+- **開機到解鎖**：719 ms `DISARMED`，印出 `# ARM blocked: SWA already on`；3,875 ms `ARMED`。
+- **通訊中斷前**：
+  - 回授最高 53.9／53.9 r/min，轉矩最大 0.7／0.5 A，油門範圍 1180–1818。
+  - 最後一筆回授：14,597 ms，左右都是 53.9 r/min。最後一筆 C 行：14,870 ms，指令 54.2 r/min。
+- **故障序列**：
+
+  | ms | 事件 |
+  |---|---|
+  | 15,100 | `T,…,10,2088,2,TIMEOUT,2,-,2088=0036;2089=FFCA` → `FAULT_STOP` |
+  | 15,204 | 急停 `200Eh＝0x05`：TIMEOUT（attempts＝1） |
+  | 15,309 | `2088h＝0,0`：TIMEOUT（attempts＝1）→ `LATCHED reason=COMM_ERROR detail=0x1` |
+
+- **LATCHED 之後**：沒有再送出任何交易，沒有再進入 `ARMING`。i-BUS 一直是 RECEIVING，CH7＝2000，到 log 結尾（47,511 ms）。
+- **輪子 1 秒內停下**：使用者目視，無 log（LATCHED 之後沒有讀取回授）。
+- **為什麼 attempts＝2**（查程式，沒有改）：
+  - `MODBUS_MAX_ATTEMPTS=1` 只設定 `kMaxAttempts`，也就是 `DriveLink::read` 的預設嘗試次數，用在開機與 DISARMED 的讀取。
+  - 寫入另由 `drive_config.h` 的 `kWriteMaxAttempts = 2` 決定：`DriveLink::sendWrite` 的寫法是 `attempts = emergency ? 1 : kWriteMaxAttempts`。ARMED 週期內的 20A5h／20ABh 讀取也明確傳入 `kWriteMaxAttempts`。
+  - 所以 ARMED 時的 `2088h` 保活寫入最多 2 次；故障路徑的急停寫入（emergency）只試 1 次，與 15,204、15,309 ms 的 attempts＝1 相符。
+  - 時間也對得上：14,870 ms 那個週期的 2088h 寫入，第 1 次等滿 100 ms 逾時，隔 20 ms 重試，第 2 次再等 100 ms，加上兩次送出前的 2 ms 靜默，約 14,870＋224 ms，在 15,100 ms 記錄。中間沒有下一筆 C 行，與「同一個週期」相符。
+
+**L6：電池供電**：使用者目視，無 log。
