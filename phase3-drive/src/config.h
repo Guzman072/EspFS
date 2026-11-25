@@ -8,6 +8,10 @@
 #include "drive_config.h"
 #include "remote_input.h"
 
+#if defined(ONBOARD_LOG) && !(defined(CONFIG_IDF_TARGET_ESP32S3) && defined(BOARD_HAS_PSRAM) && defined(DRIVE_STRICT_SAFETY))
+#error "ONBOARD_LOG 只支援 JK2501 綠板的 s3_drive_* 環境"
+#endif
+
 #ifndef THROTTLE_CH
 #error "THROTTLE_CH 未定義：請由使用者指定油門通道（0 起算），例如 -DTHROTTLE_CH=2。Claude 不自行假設通道。"
 #endif
