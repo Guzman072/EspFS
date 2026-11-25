@@ -142,6 +142,10 @@ void DriveFsm::updateRemoteFlags(uint32_t now) {
         centerValid_ = false;
         return;
     }
+    if (cfg_.strictSafety && !channelsInRange()) {
+        centerValid_ = false;  // 範圍外的值不算中位，也不算「看過 SWA 關閉」
+        return;
+    }
     if (remote_.channel(cfg_.armCh) < cfg_.armOnThreshold) sawArmOff_ = true;
     const auto centered = [this](int channel) {
         return absInt(static_cast<int>(remote_.channel(channel)) - kIbusCenter) <= cfg_.deadband;
@@ -195,6 +199,9 @@ void DriveFsm::doBoot() {
         doFault(FaultReason::PROBE_FAIL, static_cast<uint32_t>(ps));
         return;
     }
+
+    // 1b.（strictSafety）開機先送停止指令並讀回 20A2h 確認。
+    if (cfg_.strictSafety && !bootStop()) return;
 
     // 2. 預檢讀取（全部輸出供記錄）。任一讀取失敗 → 不啟用。
     uint16_t v2022 = 0, v2008 = 0, v2000 = 0, tmp = 0;
@@ -268,6 +275,20 @@ void DriveFsm::doDisarmed(uint32_t now) {
     if (cfg_.steerCh < 0) updateRemoteFlags(now);
     if (!enabled_ || cfg_.armCh < 0 || cfg_.throttleCh < 0) return;
 
+    if (cfg_.strictSafety && remote_.status() == RemoteStatus::RECEIVING) {
+        int ch = -1;
+        unsigned v = 0;
+        if (!channelsInRange(&ch, &v)) {
+            char text[80];
+            std::snprintf(text, sizeof text, "# ARM blocked: CH%d=%u out of range %d-%d", ch + 1, v, kChannelValidMin,
+                          kChannelValidMax);
+            note(3, text);
+            sawArmOff_ = false;  // 恢復後必須再看過 SWA 關閉才能解鎖
+            clearBlock();
+            return;
+        }
+    }
+
     const bool armOn = remote_.channel(cfg_.armCh) >= cfg_.armOnThreshold;
     const bool recv = remote_.status() == RemoteStatus::RECEIVING;
     if (!(armOn && recv)) {
@@ -333,6 +354,7 @@ void DriveFsm::doDisarmed(uint32_t now) {
         }
     }
     clearBlock();
+    if (cfg_.strictSafety && !rewriteOfflineBeforeArm()) return;
     doArming(now);
 }
 
@@ -368,6 +390,16 @@ void DriveFsm::doArmed(uint32_t now) {
     const bool recv = remote_.status() == RemoteStatus::RECEIVING;
     const bool armOn = recv && remote_.channel(cfg_.armCh) >= cfg_.armOnThreshold;
     if (!recv || !armOn) return doDisarm(recv);  // SWA 關或 STALE（WAITING 也視為沒有資料）
+    if (cfg_.strictSafety) {
+        int ch = -1;
+        unsigned v = 0;
+        if (!channelsInRange(&ch, &v)) {
+            char text[80];
+            std::snprintf(text, sizeof text, "# DISARM reason=CH_OUT_OF_RANGE CH%d=%u", ch + 1, v);
+            out_.line(text);
+            return doDisarm(false);  // 與 STALE 相同：必須再看過 SWA 關閉才能重新解鎖
+        }
+    }
 
     link_.setLogAll(armedTicks_ % kLogEveryNthTick == 0);
     ++armedTicks_;
@@ -478,6 +510,86 @@ void DriveFsm::sampleStop(uint32_t now) {
                       static_cast<unsigned>(sampledAt - disarmingAt_));
         out_.line(line);
     }
+}
+
+// (c) 用到的通道（油門、SWA、轉向）都要在 kChannelValidMin–kChannelValidMax 內。
+bool DriveFsm::channelsInRange(int* badChannel, unsigned* badValue) {
+    const int channels[] = {cfg_.throttleCh, cfg_.armCh, cfg_.steerCh};
+    for (int ch : channels) {
+        if (ch < 0) continue;
+        const int v = static_cast<int>(remote_.channel(ch));
+        if (v < kChannelValidMin || v > kChannelValidMax) {
+            if (badChannel) *badChannel = ch;
+            if (badValue) *badValue = static_cast<unsigned>(v);
+            return false;
+        }
+    }
+    return true;
+}
+
+// (b) 開機停止：2088h＝0,0，再 200Eh＝0x07，然後讀 20A2h，兩軸都要是解軸（00）。
+// 寫入失敗 → 故障路徑（急停）。讀回不是解軸 → 停用（live）；乾跑只顯示（寫入沒有真的送出）。
+bool DriveFsm::bootStop() {
+    everArmed_ = true;  // 從第一筆寫入開始，任何失敗都要送停止指令
+    Status s = link_.writeSpeeds(0, 0, false, WriteLog::Always);
+    if (s != Status::OK) {
+        faultFromStatus(s);
+        return false;
+    }
+    s = link_.writeControl(kCtrlStop, false, WriteLog::Always);
+    if (s != Status::OK) {
+        faultFromStatus(s);
+        return false;
+    }
+    uint16_t sw[1] = {0};
+    s = link_.read(0x20A2, 1, sw);
+    if (s != Status::OK) {
+        faultFromStatus(s);
+        return false;
+    }
+    char text[96];
+    const unsigned word = sw[0];
+    if ((sw[0] & kStatusEnabledMask) == 0) {
+        std::snprintf(text, sizeof text, "# BOOT STOP confirmed 20A2h=%04X", word);
+        out_.line(text);
+        return true;
+    }
+#ifdef DRIVE_DRYRUN
+    std::snprintf(text, sizeof text, "# would-block: boot stop not confirmed 20A2h=%04X", word);
+    out_.line(text);
+#else
+    std::snprintf(text, sizeof text, "boot stop not confirmed 20A2h=%04X", word);
+    disable(text);
+#endif
+    return true;
+}
+
+// (a) 解鎖前重寫 2000h 並讀回；讀回不符就不解鎖（live：停用，須重開機）。乾跑沒有真的寫入，只顯示。
+bool DriveFsm::rewriteOfflineBeforeArm() {
+    Status s = link_.writeOfflineTime(cfg_.offlineWriteMs);
+    if (s != Status::OK) {
+        faultFromStatus(s);
+        return false;
+    }
+    uint16_t back[1] = {0};
+    s = link_.read(0x2000, 1, back);
+    if (s != Status::OK) {
+        faultFromStatus(s);
+        return false;
+    }
+    if (back[0] == cfg_.offlineWriteMs) return true;
+    char text[80];
+#ifdef DRIVE_DRYRUN
+    std::snprintf(text, sizeof text, "# would-block: 2000h readback=%u want %u", static_cast<unsigned>(back[0]),
+                  static_cast<unsigned>(cfg_.offlineWriteMs));
+    note(4, text);
+    return true;
+#else
+    std::snprintf(text, sizeof text, "2000h readback mismatch before arm: %u want %u", static_cast<unsigned>(back[0]),
+                  static_cast<unsigned>(cfg_.offlineWriteMs));
+    disable(text);
+    return false;
+#endif
 }
 
 void DriveFsm::faultFromStatus(Status s) {

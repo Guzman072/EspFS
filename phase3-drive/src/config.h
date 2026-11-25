@@ -34,6 +34,13 @@ constexpr int kSteeringChannel = STEER_CH;
 constexpr int kSteeringChannel = -1;
 #endif
 
+// 綠板 JK2501（s3_drive_dry／s3_drive_live）啟用的額外安全項 (a)(b)(c)，見 DESIGN.md §12。esp32dev 環境不定義。
+#ifdef DRIVE_STRICT_SAFETY
+constexpr bool kStrictSafety = true;
+#else
+constexpr bool kStrictSafety = false;
+#endif
+
 #ifdef DRIVE_LIVE
 constexpr bool kFailsafeVerified = (FAILSAFE_VERIFIED + 0) != 0;
 #else

@@ -1,4 +1,5 @@
 // Phase 3 進入點（dryrun 與 live 共用）。USB Serial 輸出；UART2 一律經 Serial2Transport。
+// 不等待 USB 序列埠連線：綠板的 Serial 是 UART0（CH340），拔掉 Type-C 也照常執行。
 // dryrun：寫入只印出（# DRY W ...），沒有寫入傳輸。live：啟用寫入，須使用者確認才可燒錄。
 #include <Arduino.h>
 #include "config.h"
@@ -23,6 +24,7 @@ FsmConfig makeConfig() {
     c.armCh = ARM_CH;
     if (kSteeringEnabled) c.steerCh = kSteeringChannel;
     c.failsafeVerified = kFailsafeVerified;
+    c.strictSafety = kStrictSafety;
     return c;
 }
 

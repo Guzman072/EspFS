@@ -15,6 +15,9 @@ constexpr int kDeadband = 40;                               // i-BUS 計數，�
 constexpr int kIbusCenter = 1500;
 constexpr int kIbusHalfRange = 500;                         // 1000–2000
 constexpr int kArmOnThreshold = 1700;                       // SWA 視為打開的門檻，設計預設
+// 通道值的有效範圍（strictSafety 用，DESIGN.md §12）：i-BUS 標準範圍 1000–2000，超出就視為資料異常。
+constexpr int kChannelValidMin = kIbusCenter - kIbusHalfRange;  // 1000
+constexpr int kChannelValidMax = kIbusCenter + kIbusHalfRange;  // 2000
 // 左右方向正負號（T3/T4 實測，2026-11-23）：左輪方向正確、右輪相反 → 右輪取反。
 // 套用位置只有兩處且成對：寫入 2088h／2089h 前（DriveFsm::doArmed 的 clampRaw）與讀回 20ABh／20ACh 後（DriveLink 的 D 行、DriveFsm 的超速判斷）。
 constexpr int kLeftSign = 1;
