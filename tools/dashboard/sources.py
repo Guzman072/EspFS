@@ -13,6 +13,7 @@ from typing import Callable
 
 BAUDRATE = 115200
 READ_TIMEOUT_S = 0.1
+WRITE_TIMEOUT_S = 1.0
 RETRY_INTERVAL_S = 1.0
 HOLDER_CHECK_INTERVAL_S = 2.0
 PORT_PATTERNS = ("/dev/ttyACM*", "/dev/ttyUSB*")  # 綠板 JK2501 的 CH340 是 ttyUSB
@@ -80,6 +81,7 @@ def open_without_reset(port: str, serial_module=None):
     ser.port = port
     ser.baudrate = BAUDRATE
     ser.timeout = READ_TIMEOUT_S
+    ser.write_timeout = WRITE_TIMEOUT_S
     ser.exclusive = True  # flock；另一個也用 exclusive 的程式會被擋下
     ser.open()
     return ser
@@ -119,9 +121,8 @@ class SerialSource:
             if self._ser is None:
                 return False
             try:
-                self._ser.write(data)
-                self._ser.flush()
-                return True
+                # pyserial 的 flush() 會等待 tcdrain，不受 write_timeout 限制。
+                return self._ser.write(data) == len(data)
             except Exception:  # noqa: BLE001 — 任何寫入錯誤都只回報失敗
                 return False
 

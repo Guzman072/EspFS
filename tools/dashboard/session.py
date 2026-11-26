@@ -177,7 +177,7 @@ class Session:
             if reason is not None:
                 return False, reason
             sink = self._sink
-        # 寫入（含 flush）放在鎖外，讓來源與介面在拔線時仍能更新狀態。
+        # 序列寫入放在鎖外，讓來源與介面在等待寫入時仍能更新狀態。
         ok = sink.write_command(data)
         with self._lock:
             self._add_event({"kind": "cmd", "text": f"送出 {cmd}" if ok else f"送出 {cmd} 失敗",

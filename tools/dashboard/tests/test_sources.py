@@ -9,6 +9,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -38,7 +39,7 @@ class FakeSerialModule:
                 self.is_open = False
 
             def __setattr__(self, name, value):
-                if name in ("port", "baudrate", "timeout", "exclusive", "dtr", "rts"):
+                if name in ("port", "baudrate", "timeout", "write_timeout", "exclusive", "dtr", "rts"):
                     self.__dict__.setdefault("calls", []).append((name, value))
                 object.__setattr__(self, name, value)
 
@@ -62,6 +63,7 @@ class FakeSerialModule:
 
             def write(self, data):
                 module.written.append(data)
+                return len(data)
 
             def flush(self):
                 pass
@@ -78,7 +80,31 @@ class OpenWithoutResetTest(unittest.TestCase):
         mod = FakeSerialModule([[b""]], stop)
         ser = open_without_reset("/dev/ttyUSB9", mod)
         self.assertEqual(ser.calls, [("port", "/dev/ttyUSB9"), ("baudrate", 115200),
-                                     ("timeout", 0.1), ("exclusive", True), ("open", None)])
+                                     ("timeout", 0.1), ("write_timeout", 1.0),
+                                     ("exclusive", True), ("open", None)])
+
+
+class WriteCommandTest(unittest.TestCase):
+    def setUp(self):
+        stop = threading.Event()
+        self.module = FakeSerialModule([[b""]], stop)
+        self.ser = open_without_reset("/dev/ttyUSB9", self.module)
+        self.source = SerialSource(Session(), "/dev/ttyUSB9", stop, serial_module=self.module)
+        self.source._ser = self.ser
+
+    def test_successful_write_does_not_wait_for_flush(self):
+        with patch.object(self.ser, "flush") as flush:
+            self.assertTrue(self.source.write_command(b"dump\n"))
+        self.assertEqual(self.module.written, [b"dump\n"])
+        flush.assert_not_called()
+
+    def test_write_timeout_returns_false(self):
+        with patch.object(self.ser, "write", side_effect=TimeoutError("Write timeout")):
+            self.assertFalse(self.source.write_command(b"dump\n"))
+
+    def test_partial_write_returns_false(self):
+        with patch.object(self.ser, "write", return_value=2):
+            self.assertFalse(self.source.write_command(b"dump\n"))
 
 
 class DetectAndHoldersTest(unittest.TestCase):
