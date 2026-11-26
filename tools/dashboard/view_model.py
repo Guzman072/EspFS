@@ -20,7 +20,7 @@ def swa_display(value: int | None) -> tuple[str, str]:
         return "—", "muted"
     if value < 1500:
         return "關", "good"
-    if value <= 1700:
+    if value < 1700:
         return "未達解鎖門檻", "muted"
     return "開", "warn"
 

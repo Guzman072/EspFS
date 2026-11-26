@@ -38,7 +38,8 @@ class DashboardModelTest(unittest.TestCase):
         self.assertEqual(swa_display(None), ('—', 'muted'))
         self.assertEqual(swa_display(1499), ('關', 'good'))
         self.assertEqual(swa_display(1500), ('未達解鎖門檻', 'muted'))
-        self.assertEqual(swa_display(1700), ('未達解鎖門檻', 'muted'))
+        self.assertEqual(swa_display(1699), ('未達解鎖門檻', 'muted'))
+        self.assertEqual(swa_display(1700), ('開', 'warn'))
         self.assertEqual(swa_display(1701), ('開', 'warn'))
 
     def test_reboot_notice_resets_chart(self):

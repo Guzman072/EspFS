@@ -33,7 +33,7 @@ python3 tools/dashboard/dashboard.py --replay path/to/input.log --speed 10 --log
 ## 畫面與記錄
 
 - 頂列顯示連線、埠、板子 uptime、偵測到的重開機次數及 log 檔名與行數。狀態面板顯示系統狀態、原因、接收器與 `frame_age`。`LATCHED` 有紅色警告，`PROBE_FAIL` 另顯示「請按板子上的 RESET」。故障處理依 `AGENTS.md` 規則 21–23。
-- 遙控位置以 1500 為中點，灰帶標示 1460–1540 死區。接收器有資料時，CH7 小於 1500 顯示「關」、1500–1700 顯示灰色「未達解鎖門檻」、大於 1700 顯示「開」。這支遙控器撥上＝關、撥下＝開。
+- 遙控位置以 1500 為中點，灰帶標示 1460–1540 死區。接收器有資料時，CH7 小於 1500 顯示「關」、1500 至小於 1700 顯示灰色「未達解鎖門檻」、1700 以上顯示「開」。這支遙控器撥上＝關、撥下＝開。
 - 輪子面板顯示實際轉速、目標、電流、`error_code` 和 `motor_state`。虛線為 ±60 r/min 上限，紅線為 ±72 r/min 超速線。超過兩秒未更新的回授標「舊」。下方分頁可看最近 60 秒曲線、事件或最近 200 行原始輸出。uptime 回退超過 100 ms 時清空曲線並顯示重開機提示。
 - `dump` 與 `erase` 只在已連線且處於 `DISARMED` 或 `LATCHED` 時可用，傾倒期間停用。`erase` 先跳確認，再要求輸入 `ERASE`。傾倒時顯示橫幅，即時面板與曲線暫停更新，舊事件標成「傾倒」。
 - `dashboard-YYMMDD-HHMMSS.log` 保存原始序列輸出，重連續寫。`dashboard-YYMMDD-HHMMSS-series.csv` 保存每個 C／R 行的最新數值，欄位為 `host_time,ms,tgtL,tgtR,actL,actR,CH2,CH4,CH7,state`。傾倒段另存 `dump-YYMMDD-HHMMSS.log`，不混入 series CSV。
