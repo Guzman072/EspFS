@@ -195,12 +195,13 @@ class ReplaySource:
     """把既有 log 當輸入重播。speed=1 依 ms 間隔即時重播；speed<=0 不等待。傾倒內容不等待。"""
 
     def __init__(self, session, path: Path, speed: float, stop: threading.Event,
-                 sleep: Callable[[float], bool] | None = None) -> None:
+                 sleep: Callable[[float], bool] | None = None, dump_pause_s: float = 0) -> None:
         self.session = session
         self.path = Path(path)
         self.speed = speed
         self.stop = stop
         self._sleep = sleep or stop.wait
+        self.dump_pause_s = dump_pause_s
 
     def run(self) -> None:
         self.session.set_connection("replay", str(self.path), f"重播 ×{self.speed:g}")
@@ -223,4 +224,6 @@ class ReplaySource:
                     last_ms = ms
                 self.session.feed(line if line.endswith(b"\n") else line + b"\n")
                 self.session.tick()
+                if stripped == b"# ONBOARD_LOG dump begin" and self.dump_pause_s:
+                    self.stop.wait(self.dump_pause_s)
         self.session.set_connection("replay_done", str(self.path), "重播完畢")

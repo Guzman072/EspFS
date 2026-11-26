@@ -1,6 +1,6 @@
-"""把來源（序列埠或重播）收到的行，交給解析器、記錄器與瀏覽器。
+"""把來源（序列埠或重播）收到的行，交給解析器、記錄器與介面。
 
-執行緒：來源執行緒呼叫 feed()／set_connection()；HTTP 執行緒呼叫 updates_since()／send_command()。
+執行緒：來源執行緒呼叫 feed()／set_connection()；介面讀取 updates_since()，指令由背景送出。
 全部經過同一把鎖。
 """
 
@@ -28,7 +28,7 @@ class CommandSink(Protocol):
 
 
 class _History:
-    """附遞增序號的環形緩衝，讓每個瀏覽器連線只取自己還沒看過的項目。"""
+    """附遞增序號的環形緩衝，讓介面只取尚未顯示的項目。"""
 
     def __init__(self, maxlen: int) -> None:
         self._items: deque[tuple[int, dict]] = deque(maxlen=maxlen)
@@ -126,7 +126,7 @@ class Session:
     def _add_event(self, ev: dict) -> None:
         self.events.append({**ev, "host": self._now().strftime("%H:%M:%S")})
 
-    # ---- HTTP 端 ----
+    # ---- 介面端 ----
     def _status_locked(self) -> dict:
         logger = self.logger
         state = self.monitor.snapshot()
@@ -177,7 +177,7 @@ class Session:
             if reason is not None:
                 return False, reason
             sink = self._sink
-        # 寫入（含 flush）放在鎖外：拔線時 flush 可能卡住，不能連帶卡住讀取與 SSE。
+        # 寫入（含 flush）放在鎖外，讓來源與介面在拔線時仍能更新狀態。
         ok = sink.write_command(data)
         with self._lock:
             self._add_event({"kind": "cmd", "text": f"送出 {cmd}" if ok else f"送出 {cmd} 失敗",
