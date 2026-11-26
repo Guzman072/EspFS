@@ -28,7 +28,7 @@
 - **綠板 JK2501（ESP32-S3）移植（Issue #8，分支 `feat/s3-port`）**：2026-11-25 `s3_ibus` 與 `s3_poll` 都通過。`s3_poll` 須把 A、B 對調（綠板第 3 腳〔標 A〕→J5 B，第 4 腳〔標 B〕→J5 A）。[實測來源](docs/TESTLOG.md#2026-11-25)
 - **綠板寫入授權（2026-11-25，來源：使用者本人）**：使用者授權綠板 JK2501 做第三階段寫入（移植 phase3-drive，分支 `feat/s3-drive`），Issue #8 的「綠板寫入禁止」解除，改由新 Issue 追蹤。寫入仍只限規則 16 白名單；燒錄、上電、啟動馬達仍須依規則 10、11、13 另行確認。移植程式在 `phase3-drive` 的 `s3_drive_dry`／`s3_drive_live`（設計見 `phase3-drive/DESIGN.md` §12）。2026-11-25 `s3_drive_dry` 已燒錄實測：開機停止確認、解鎖、混控、T2 (a)(b) 都有 log。使用者聲明 T2 (a)(b) 通過，並指定 `s3_drive_live` 加 `-DFAILSAFE_VERIFIED=1`（規則 19）。T2 (b) 之後 i-BUS 有多次 STALE／RECEIVING 交替，原因待使用者確認。[實測來源](docs/TESTLOG.md#2026-11-25)（`phase3-drive/logs/device-monitor-261125-114105.log`、`-114653.log`、`-115858.log`）
 - **綠板板上 log**：`s3_drive_*` 可用 `-DONBOARD_LOG` 選用，預設關閉。記錄先進 PSRAM，解除後完成輪速取樣或進入 `LATCHED` 才寫入 LittleFS。板上存取及 Type-C 指令待實機驗證。[設計 §13](phase3-drive/DESIGN.md#13-綠板板上-log)
-- **綠板開機探測（2026-11-25）**：板載 log 確認 4 次開機的 20A0h 首筆交易逾時，直接鎖定為 `PROBE_FAIL`。使用者判斷這 4 次是冷開機。啟動等待與探測重試已加入 `fix/probe-cold-boot`，待同一供電配置複測冷開機與 EN 重啟。[實測來源](docs/TESTLOG.md#jk2501-開機探測逾時)
+- **綠板開機探測（2026-11-25）**：板載 log 確認 4 次開機的 20A0h 首筆交易逾時，直接鎖定為 `PROBE_FAIL`。使用者判斷這 4 次是冷開機。啟動等待與探測重試已加入 `fix/probe-cold-boot`。[11-25 實測來源](docs/TESTLOG.md#jk2501-開機探測逾時) 2026-11-26 實機冷上電 5/5、RESET 5/5 皆第一次探測成功。驅動器斷電時，3 輪皆在 3 次逾時後鎖定。未做舊版同環境對照，[PR #21](https://github.com/Guzman072/EspFS/pull/21) 尚未合併。[11-26 實測來源](docs/TESTLOG.md#pr-21-冷開機探測重試實機驗證b2caf5d)
 - **綠板 `s3_drive_live` 已燒錄，L1–L6 在輪子懸空下通過（2026-11-25）**：[實測來源](docs/TESTLOG.md#jk2501-s3_drive_live-懸空測試l1l6)（`phase3-drive/logs/device-monitor-261125-130602.log`、`-131809.log`、`-132054.log`、`-132455.log`）。
   - L1–L4（130602）：開機停止確認、2000h＝500 讀回、解鎖、行駛；SWA、遙控器關機、拔 i-BUS 三種解除的 STOP 為 127–427 ms。
   - 131809：拔 i-BUS 後 254 ms `STALE`，STOP 277 ms；插回後 `ARM blocked: SWA already on`；重新解鎖後 SWA 解除，STOP 30 ms。
@@ -156,11 +156,11 @@ ESP32 供電：本體 Type-C 連電腦（現況）。
 
 2026-11-26 待辦
 
-1. 在實機驗證 PR #21 的開機探測重試，使用 `s3_drive_dry` 搭配 `-DONBOARD_LOG`，測 5 次冷上電與 5 次 RESET。
+1. **已完成**。PR #21 冷上電與 RESET 各 5/5 到 `DISARMED`，皆首次探測成功。驅動器斷電時 3/3 在三次逾時後鎖定。「失敗後重試成功」未在實機觸發。使用者決定跳過舊版 `92a4295` 的同環境對照，無法判斷當天的成功是否歸因於修正。11-25 `165625` 的 4 次失敗來自舊版。[實測來源](docs/TESTLOG.md#pr-21-冷開機探測重試實機驗證b2caf5d)
 2. **已完成**。實機驗證 PR #22 的 Tkinter 桌面版，T1–T5 通過。[TESTLOG 2026-11-26](docs/TESTLOG.md#2026-11-26)
-3. 桌面版已採三態顯示（CH7 < 1500 為關、1500–1700 為未達解鎖門檻、> 1700 為開），此項已定案。
+3. 桌面版已採三態顯示（CH7 < 1500 為關、1500 ≤ CH7 < 1700 為未達解鎖門檻、≥ 1700 為開），此項已定案。
 4. 合併順序為 #17、#16、#21，之後處理 #22 與 #18–#20。
-5. PR #21 驗證前的暫行建議（Claude 建議，使用者尚未確認）為每次上電後先按一次 RESET，再解鎖。
+5. PR #21 驗證前的暫行建議（Claude 建議，使用者尚未確認）為每次上電後先按一次 RESET，再解鎖。PR #21 實機驗證後，由使用者決定是否取消。
 6. 待第 1 項通過後再安排落地測試，並依規則 26 先處理「待使用者決定」項目。
 7. 儀表板插上自動啟動（udev＋systemd）。
 

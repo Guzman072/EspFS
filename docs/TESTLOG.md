@@ -462,6 +462,7 @@
 | [V5 重做 V4](../phase3-drive/logs/serial-open-V5-V4.log) | 40,585 → 44,585 | 未見 | 未見，下一筆 50,585。 |
 
 - **V2 重置時點**約在開埠後 0.05 秒，距 V1 關埠約 5.05 秒，依首筆 R 的 ms 與主機時間推算。舊程式在呼叫 `open()` 前設定 DTR、RTS 為 `False`，pyserial 在開埠時套用。V1 一次開埠未見重置，V3 與 V4 各兩次開關埠均未見重置。
+- V1 開埠時板子處於 `LATCHED reason=PROBE_FAIL`。[serial-open-V1.log 第 2 行](../phase3-drive/logs/serial-open-V1.log#L2)
 - **V3 的 Type-C 拔插未見重置**。`/dev/ttyUSB0` 消失約 12.9 秒，R 行由拔插前最後一筆 54,585 ms 接續到重插後第一筆 111,585 ms，增量 57,000 ms 與主機經過時間相符，未見 `rst:` 或 `# BOOT seq=`。[拔插前 log](../phase3-drive/logs/serial-open-USB-before.log) · [拔插後 log](../phase3-drive/logs/serial-open-USB-after.log)
 
 ### Tkinter 桌面版實機 T1–T5
@@ -479,3 +480,36 @@
 ### 遙控器 SWA 實體方向
 
 使用者回報這支遙控器 **撥上＝關閉（CH7＝1000），撥下＝開啟（CH7＝2000）**。
+
+### PR #21 冷開機探測重試實機驗證（b2caf5d）
+
+紀錄來自使用者在場操作、Codex 回報，已與 log 核對。綠板使用 `s3_drive_dry` 加 `-DONBOARD_LOG`，Flash 用量 340,861 B、RAM 用量 19,292 B。輪子懸空，SWA 全程撥上為關，未解鎖。[開機 log 節錄](../phase3-drive/logs/probe-verify-261126-excerpts.log)
+
+| 編號 | 操作 | 最終狀態 | PROBE 嘗試次數 | 首筆 20A0h 狀態與 RTT |
+|---|---|---|---|---|
+| A1 | 冷上電 | `DISARMED` | 1/3 | `OK`，3 ms |
+| A2 | 冷上電 | `DISARMED` | 1/3 | `OK`，4 ms |
+| A3 | 冷上電 | `DISARMED` | 1/3 | `OK`，4 ms |
+| A4 | 冷上電 | `DISARMED` | 1/3 | `OK`，3 ms |
+| A5 | 冷上電 | `DISARMED` | 1/3 | `OK`，3 ms |
+| B1 | RESET | `DISARMED` | 1/3 | `OK`，4 ms |
+| B2 | RESET | `DISARMED` | 1/3 | `OK`，3 ms |
+| B3 | RESET | `DISARMED` | 1/3 | `OK`，4 ms |
+| B4 | RESET | `DISARMED` | 1/3 | `OK`，4 ms |
+| B5 | RESET | `DISARMED` | 1/3 | `OK`，3 ms |
+
+10/10 到 `DISARMED`，皆於第 1/3 次探測成功。A2–A5 的即時 log 漏了部分開機輸出，已由板上傾倒補齊。B4 期間遙控器關閉，接收器顯示 `WAITING`。B5 前已重開遙控器並確認 `RECEIVING`、CH7＝1000。
+
+驅動器兩組電源端子在總電源關閉時拔下，三輪皆由 ESP32 單獨冷開機。每輪的 `# PROBE attempt 1/3`、`2/3`、`3/3` 均各出現一次。
+
+| 輪次 | PROBE 1／2／3 開始時間（推算，ms） | 20A0h T 行（板上 ms） | 最終狀態 | 首次探測至鎖定（推算） |
+|---|---:|---|---|---:|
+| 1 | 1,111／1,716／2,321 | 1,216／1,821／2,426，皆 `TIMEOUT` | `LATCHED reason=PROBE_FAIL`，2,426 ms | 約 1,315 ms |
+| 2 | 1,112／1,717／2,322 | 1,217／1,822／2,427，皆 `TIMEOUT` | `LATCHED reason=PROBE_FAIL`，2,427 ms | 約 1,315 ms |
+| 3 | 1,114／1,719／2,324 | 1,219／1,824／2,429，皆 `TIMEOUT` | `LATCHED reason=PROBE_FAIL`，2,429 ms | 約 1,315 ms |
+
+`# PROBE attempt` 行沒有板上時間戳，開始時間由 `S,…,BOOT`、T 行時間與韌體的 500 ms 等待推算。三輪從 `S,…,BOOT` 到 `S,…,LATCHED` 均為 1,815 ms。第 2、3 輪的開頭由板上傾倒補齊。三輪皆依規則 22 復位。驅動器接回後，最後一次正常冷上電確認 `DISARMED`。
+
+節錄共 13 段。有 ROM 開機訊息時從該行開始，其餘從原檔最早可用的開機輸出或板上傾倒的 `# BOOT seq=` 開始。
+
+**限制。** 正常供電的 10 次皆在第一次探測成功，實機未觸發「失敗後重試成功」。使用者決定跳過舊版 `92a4295` 的同環境對照，因此無法判斷成功歸因於修正，或是問題當天未重現。2026-11-25 的 `165625` 紀錄中，4 次探測失敗均發生於舊版。[11-25 探測逾時紀錄](#jk2501-開機探測逾時)
