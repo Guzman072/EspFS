@@ -10,6 +10,14 @@ int16_t limitRawFor(int d);                          // round(kSpeedLimitRpm × 
 // i-BUS 通道值（1000–2000，1500 為中位）→ r/min（-limit..+limit）。死區內為 0。
 float throttleToRpm(int ibusValue, int deadband, float limitRpm);
 
+struct WheelTargets {
+    float left;
+    float right;
+};
+
+// 車體座標：前進為正，steeringInput 為死區換算後的轉向值（向左 -1、向右 +1）。
+WheelTargets mixWheelTargets(float throttleRpm, float steeringInput, float limitRpm);
+
 // 超速門檻（單位 0.1 r/min，與 20ABh／20ACh 的讀值同單位）＝round(上限 × kOverspeedFactor × 10)。
 int overspeedLimit01(float limitRpm);
 

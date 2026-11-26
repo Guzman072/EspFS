@@ -15,7 +15,7 @@ enum class FaultReason : uint8_t {
     DRIVER_FAULT,    // 20A5h／20A6h 非 0（detail 為故障碼）
     COMM_ERROR,      // TIMEOUT、CRC、例外回應等（detail 為 Status）
     WRITE_MISMATCH,  // 寫入回應與請求不符
-    OVERSPEED,       // 實際速度超過指令上限 × kOverspeedFactor（目前 1.2 倍，上限 90 時 108 r/min；detail 為 0.1 r/min 的絕對值）
+    OVERSPEED,       // 實際速度超過指令上限 × kOverspeedFactor（detail 為 0.1 r/min 的絕對值）
     REJECTED,        // 任何 REJECTED_*（detail 為 Status）
     TX_FAIL,         // transport 沒寫完整個封包
 };
@@ -48,6 +48,7 @@ public:
     void step();  // 在 loop() 內反覆呼叫
 
     DriveState state() const { return state_; }
+    bool stopSampling() const { return stopSampling_; }
     FaultReason faultReason() const { return fault_; }
     uint32_t faultDetail() const { return faultDetail_; }
     bool enabled() const { return enabled_; }

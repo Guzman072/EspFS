@@ -1,18 +1,18 @@
 #include "drive_fsm.h"
-#include <algorithm>
-#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include "write_rules.h"
 
 namespace {
 constexpr uint16_t kStatusEnabledMask = 0xC0C0;  // 20A2h：左 bit15–14、右 bit7–6；00 00＝解軸（未使能）
+constexpr uint32_t kBootProbeSettleMs = 500;
+constexpr uint32_t kBootProbeRetryMs = 500;
+constexpr unsigned kBootProbeAttempts = 3;
+static_assert(kBootProbeAttempts <= kLatchAfterFailures, "開機探測不可超過傳輸層允許的失敗次數");
 constexpr uint32_t kStopSampleWindowMs = 3000;
 constexpr int kStopSpeed01 = 10;  // 1.0 r/min，取樣值須嚴格低於此門檻
 
 int absInt(int v) { return v < 0 ? -v : v; }
-
-float clampRpm(float rpm, float limit) { return std::max(-limit, std::min(rpm, limit)); }
 
 // 20A2h 的軸狀態（V4 RS485 §六、p.18）：每軸 2 位元，左 bit15–14、右 bit7–6；00 解軸、40 鎖軸、80 急停、C0 報警。
 const char* axisStateName(unsigned twoBits) {
@@ -192,9 +192,20 @@ void DriveFsm::doBoot() {
     std::snprintf(line, sizeof line, "S,%u,BOOT", static_cast<unsigned>(t_.nowMs()));
     out_.line(line);
 
-    // 1. 只探測 Slave ID 1（讀 20A0h 共 1 個）。失敗 → LATCHED（還沒使能過，不必送停止指令）。
+    // 1. UART 已初始化。等冷開機硬體就緒，再清掉等待期間收到的 RX 資料。
+    t_.delayMs(kBootProbeSettleMs);
+    t_.clearRx();
+
+    // 只探測 Slave ID 1 的 20A0h。每次獨立讀取，保留個別失敗的 T 行。
     uint16_t probe[1];
-    const Status ps = link_.read(0x20A0, 1, probe);
+    Status ps = Status::TIMEOUT;
+    for (unsigned attempt = 1; attempt <= kBootProbeAttempts; ++attempt) {
+        if (attempt > 1) t_.delayMs(kBootProbeRetryMs);
+        std::snprintf(line, sizeof line, "# PROBE attempt %u/%u", attempt, kBootProbeAttempts);
+        out_.line(line);
+        ps = link_.read(0x20A0, 1, probe, 1);
+        if (!isRetryableStatus(ps) || link_.latched()) break;
+    }
     if (ps != Status::OK) {
         doFault(FaultReason::PROBE_FAIL, static_cast<uint32_t>(ps));
         return;
@@ -407,17 +418,15 @@ void DriveFsm::doArmed(uint32_t now) {
     const unsigned throttle = remote_.channel(cfg_.throttleCh);
     const float want = throttleToRpm(throttle, cfg_.deadband, cfg_.speedLimitRpm);
     const bool steering = cfg_.steerCh >= 0;
-    float steer = 0.0f;
+    WheelTargets targets{want, want};
     if (steering) {
         const float input = throttleToRpm(remote_.channel(cfg_.steerCh), cfg_.deadband, 1.0f) * kSteerInputSign;
-        steer = clampRpm(input * kSteeringGain * cfg_.speedLimitRpm, std::fabs(want));
+        targets = mixWheelTargets(want, input, cfg_.speedLimitRpm);
     }
-    const float leftTarget = steering ? clampRpm(want + steer, cfg_.speedLimitRpm) : want;
-    const float rightTarget = steering ? clampRpm(want - steer, cfg_.speedLimitRpm) : want;
     const uint32_t dt = now - lastCmdAt_;
     lastCmdAt_ = now;
-    const float leftCmd = leftSlew_.step(leftTarget, dt);
-    const float rightCmd = steering ? rightSlew_.step(rightTarget, dt) : leftCmd;
+    const float leftCmd = leftSlew_.step(targets.left, dt);
+    const float rightCmd = steering ? rightSlew_.step(targets.right, dt) : leftCmd;
     auto clampRaw = [this](float rpm, int sign) {
         int raw = rpmToRaw(rpm * static_cast<float>(sign), resolution_);
         if (raw > limitRaw_) raw = limitRaw_;
@@ -430,9 +439,10 @@ void DriveFsm::doArmed(uint32_t now) {
     char line[112];
     if (steering) {
         const float cmd = (leftCmd + rightCmd) * 0.5f;
+        const float steer = (targets.left - targets.right) * 0.5f;
         std::snprintf(line, sizeof line, "C,%u,%u,%.1f,%d,%d,%.1f,%.1f,%.1f", static_cast<unsigned>(now), throttle,
                       static_cast<double>(cmd), left, right, static_cast<double>(steer),
-                      static_cast<double>(leftTarget), static_cast<double>(rightTarget));
+                      static_cast<double>(targets.left), static_cast<double>(targets.right));
     } else {
         std::snprintf(line, sizeof line, "C,%u,%u,%.1f,%d,%d", static_cast<unsigned>(now), throttle,
                       static_cast<double>(leftCmd), left, right);

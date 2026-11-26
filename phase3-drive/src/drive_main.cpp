@@ -6,11 +6,23 @@
 #include "drive_fsm.h"
 #include "ibus_remote.h"
 #include "transport_serial2.h"
+#ifdef ONBOARD_LOG
+#include "onboard_log_serial.h"
+#endif
 
 namespace {
+#ifdef ONBOARD_LOG
+OnboardSerialLog onboardLog;
+#endif
 class UsbSink : public ILineSink {
 public:
-    void line(const char* text) override { Serial.println(text); }
+    void line(const char* text) override {
+#ifdef ONBOARD_LOG
+        onboardLog.line(text);
+#else
+        Serial.println(text);
+#endif
+    }
 };
 
 Serial2Transport transport;
@@ -32,13 +44,22 @@ DriveFsm fsm(transport, link, remote, sink, makeConfig());
 }  // namespace
 
 void setup() {
+#ifdef ONBOARD_LOG
+    Serial.setTxBufferSize(512);
+#endif
     Serial.begin(115200);
     delay(500);
+#ifdef ONBOARD_LOG
+    onboardLog.begin();
+#endif
     transport.begin();
     remote.begin();
 }
 
 void loop() {
     fsm.step();
+#ifdef ONBOARD_LOG
+    onboardLog.service(fsm);
+#endif
     if (fsm.state() == DriveState::LATCHED) delay(20);  // LATCHED：不再送出任何請求，等使用者重開機
 }

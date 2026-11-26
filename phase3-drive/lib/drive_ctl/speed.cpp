@@ -1,4 +1,5 @@
 #include "speed.h"
+#include <algorithm>
 #include <cmath>
 
 bool validResolution(int d) { return d >= 1 && d <= 10; }
@@ -22,6 +23,28 @@ float throttleToRpm(int ibusValue, int deadband, float limitRpm) {
     if (ax <= deadband) return 0.0f;
     const float mag = static_cast<float>(ax - deadband) / static_cast<float>(kIbusHalfRange - deadband) * limitRpm;
     return x > 0 ? mag : -mag;
+}
+
+WheelTargets mixWheelTargets(float throttleRpm, float steeringInput, float limitRpm) {
+    float turn;
+    if (throttleRpm > 0.0f) {
+        const float requested = steeringInput * kSteeringGain * limitRpm;
+        turn = std::max(-throttleRpm, std::min(requested, throttleRpm));
+    } else if (throttleRpm < 0.0f) {
+        // 倒車時轉向反號，差速隨油門大小變化，兩輪目標均維持後退。
+        turn = steeringInput * kSteeringGain * throttleRpm;
+    } else {
+        turn = steeringInput * kInPlaceMaxRpm;
+    }
+
+    WheelTargets targets{throttleRpm + turn, throttleRpm - turn};
+    const float peak = std::max(std::fabs(targets.left), std::fabs(targets.right));
+    if (peak > limitRpm) {
+        const float scale = limitRpm / peak;
+        targets.left *= scale;
+        targets.right *= scale;
+    }
+    return targets;
 }
 
 float SlewLimiter::step(float targetRpm, uint32_t dtMs) {
