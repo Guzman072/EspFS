@@ -1,0 +1,453 @@
+# source: dashboard-261126-110757.log 行 61–95
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,614,BOOT
+# PROBE attempt 1/3
+T,1122,01,03,20A0,1,OK,1,3,20A0=65C9
+D,1122,sw_version,26057,raw
+# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8
+T,1122,01,10,2088,2,OK,0,-,2088=0000;2089=0000
+# DRY W 01 06 20 0E 00 07 A2 0B
+T,1123,01,06,200E,1,OK,0,-,200E=0007
+T,1133,01,03,20A2,1,OK,1,3,20A2=0000
+D,1133,motor_state_L,0,state
+D,1133,motor_state_R,0,state
+# BOOT STOP confirmed 20A2h=0000
+T,1143,01,03,2022,1,OK,1,3,2022=0001
+D,1143,speed_resolution,1,div
+T,1151,01,03,2008,1,OK,1,3,2008=03E8
+D,1151,max_rpm,1000,r/min
+T,1159,01,03,2000,1,OK,1,3,2000=0000
+D,1159,comm_offline_ms,0,ms
+T,1167,01,03,200F,1,OK,1,3,200F=0001
+D,1167,sync_flag,1,flag
+T,1175,01,03,2007,1,OK,1,3,2007=0000
+D,1175,power_on_lock_mode,0,mode
+T,1183,01,03,2011,1,OK,1,3,2011=0005
+D,1183,quick_stop_code,5,code
+T,1191,01,03,2023,1,OK,1,3,2023=0000
+D,1191,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,1200,01,03,20A5,2,OK,1,4,20A5=0000;20A6=0000
+D,1200,error_code_L,0,bits
+D,1200,error_code_R,0,bits
+T,1209,01,03,20A2,1,OK,1,3,20A2=0000
+D,1209,motor_state_L,0,state
+D,1209,motor_state_R,0,state
+S,1209,DISARMED
+# source: dump-261126-111112.log 行 15088–15124
+# BOOT seq=23
+# STATE DISARMED reason=NONE
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,614,BOOT
+# PROBE attempt 1/3
+T,1123,01,03,20A0,1,OK,1,4,20A0=65C9
+D,1123,sw_version,26057,raw
+# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8
+T,1123,01,10,2088,2,OK,0,-,2088=0000;2089=0000
+# DRY W 01 06 20 0E 00 07 A2 0B
+T,1124,01,06,200E,1,OK,0,-,200E=0007
+T,1135,01,03,20A2,1,OK,1,4,20A2=0000
+D,1135,motor_state_L,0,state
+D,1135,motor_state_R,0,state
+# BOOT STOP confirmed 20A2h=0000
+T,1145,01,03,2022,1,OK,1,4,2022=0001
+D,1145,speed_resolution,1,div
+T,1154,01,03,2008,1,OK,1,4,2008=03E8
+D,1154,max_rpm,1000,r/min
+T,1163,01,03,2000,1,OK,1,4,2000=0000
+D,1163,comm_offline_ms,0,ms
+T,1172,01,03,200F,1,OK,1,4,200F=0001
+D,1172,sync_flag,1,flag
+T,1181,01,03,2007,1,OK,1,4,2007=0000
+D,1181,power_on_lock_mode,0,mode
+T,1190,01,03,2011,1,OK,1,4,2011=0005
+D,1190,quick_stop_code,5,code
+T,1199,01,03,2023,1,OK,1,4,2023=0000
+D,1199,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,1208,01,03,20A5,2,OK,1,4,20A5=0000;20A6=0000
+D,1208,error_code_L,0,bits
+D,1208,error_code_R,0,bits
+T,1218,01,03,20A2,1,OK,1,4,20A2=0000
+D,1218,motor_state_L,0,state
+D,1218,motor_state_R,0,state
+S,1218,DISARMED
+# source: dump-261126-111330.log 行 15125–15161
+# BOOT seq=24
+# STATE DISARMED reason=NONE
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,614,BOOT
+# PROBE attempt 1/3
+T,1123,01,03,20A0,1,OK,1,4,20A0=65C9
+D,1123,sw_version,26057,raw
+# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8
+T,1123,01,10,2088,2,OK,0,-,2088=0000;2089=0000
+# DRY W 01 06 20 0E 00 07 A2 0B
+T,1124,01,06,200E,1,OK,0,-,200E=0007
+T,1135,01,03,20A2,1,OK,1,4,20A2=0000
+D,1135,motor_state_L,0,state
+D,1135,motor_state_R,0,state
+# BOOT STOP confirmed 20A2h=0000
+T,1145,01,03,2022,1,OK,1,4,2022=0001
+D,1145,speed_resolution,1,div
+T,1154,01,03,2008,1,OK,1,4,2008=03E8
+D,1154,max_rpm,1000,r/min
+T,1163,01,03,2000,1,OK,1,4,2000=0000
+D,1163,comm_offline_ms,0,ms
+T,1172,01,03,200F,1,OK,1,4,200F=0001
+D,1172,sync_flag,1,flag
+T,1181,01,03,2007,1,OK,1,4,2007=0000
+D,1181,power_on_lock_mode,0,mode
+T,1190,01,03,2011,1,OK,1,4,2011=0005
+D,1190,quick_stop_code,5,code
+T,1199,01,03,2023,1,OK,1,4,2023=0000
+D,1199,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,1208,01,03,20A5,2,OK,1,4,20A5=0000;20A6=0000
+D,1208,error_code_L,0,bits
+D,1208,error_code_R,0,bits
+T,1218,01,03,20A2,1,OK,1,4,20A2=0000
+D,1218,motor_state_L,0,state
+D,1218,motor_state_R,0,state
+S,1218,DISARMED
+# source: dump-261126-111547.log 行 15163–15199
+# BOOT seq=25
+# STATE DISARMED reason=NONE
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,608,BOOT
+# PROBE attempt 1/3
+T,1116,01,03,20A0,1,OK,1,3,20A0=65C9
+D,1116,sw_version,26057,raw
+# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8
+T,1116,01,10,2088,2,OK,0,-,2088=0000;2089=0000
+# DRY W 01 06 20 0E 00 07 A2 0B
+T,1117,01,06,200E,1,OK,0,-,200E=0007
+T,1128,01,03,20A2,1,OK,1,4,20A2=0000
+D,1128,motor_state_L,0,state
+D,1128,motor_state_R,0,state
+# BOOT STOP confirmed 20A2h=0000
+T,1137,01,03,2022,1,OK,1,3,2022=0001
+D,1137,speed_resolution,1,div
+T,1145,01,03,2008,1,OK,1,3,2008=03E8
+D,1145,max_rpm,1000,r/min
+T,1153,01,03,2000,1,OK,1,3,2000=0000
+D,1153,comm_offline_ms,0,ms
+T,1161,01,03,200F,1,OK,1,3,200F=0001
+D,1161,sync_flag,1,flag
+T,1169,01,03,2007,1,OK,1,3,2007=0000
+D,1169,power_on_lock_mode,0,mode
+T,1177,01,03,2011,1,OK,1,3,2011=0005
+D,1177,quick_stop_code,5,code
+T,1185,01,03,2023,1,OK,1,3,2023=0000
+D,1185,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,1194,01,03,20A5,2,OK,1,4,20A5=0000;20A6=0000
+D,1194,error_code_L,0,bits
+D,1194,error_code_R,0,bits
+T,1203,01,03,20A2,1,OK,1,3,20A2=0000
+D,1203,motor_state_L,0,state
+D,1203,motor_state_R,0,state
+S,1203,DISARMED
+# source: dump-261126-111744.log 行 15202–15238
+# BOOT seq=26
+# STATE DISARMED reason=NONE
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,608,BOOT
+# PROBE attempt 1/3
+T,1116,01,03,20A0,1,OK,1,3,20A0=65C9
+D,1116,sw_version,26057,raw
+# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8
+T,1116,01,10,2088,2,OK,0,-,2088=0000;2089=0000
+# DRY W 01 06 20 0E 00 07 A2 0B
+T,1117,01,06,200E,1,OK,0,-,200E=0007
+T,1127,01,03,20A2,1,OK,1,3,20A2=0000
+D,1127,motor_state_L,0,state
+D,1127,motor_state_R,0,state
+# BOOT STOP confirmed 20A2h=0000
+T,1137,01,03,2022,1,OK,1,3,2022=0001
+D,1137,speed_resolution,1,div
+T,1145,01,03,2008,1,OK,1,3,2008=03E8
+D,1145,max_rpm,1000,r/min
+T,1153,01,03,2000,1,OK,1,3,2000=0000
+D,1153,comm_offline_ms,0,ms
+T,1161,01,03,200F,1,OK,1,3,200F=0001
+D,1161,sync_flag,1,flag
+T,1169,01,03,2007,1,OK,1,3,2007=0000
+D,1169,power_on_lock_mode,0,mode
+T,1177,01,03,2011,1,OK,1,3,2011=0005
+D,1177,quick_stop_code,5,code
+T,1186,01,03,2023,1,OK,1,4,2023=0000
+D,1186,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,1195,01,03,20A5,2,OK,1,4,20A5=0000;20A6=0000
+D,1195,error_code_L,0,bits
+D,1195,error_code_R,0,bits
+T,1204,01,03,20A2,1,OK,1,3,20A2=0000
+D,1204,motor_state_L,0,state
+D,1204,motor_state_R,0,state
+S,1204,DISARMED
+# source: dashboard-261126-110757.log 行 61356–61399
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,609,BOOT
+# PROBE attempt 1/3
+T,1118,01,03,20A0,1,OK,1,4,20A0=65C9
+D,1118,sw_version,26057,raw
+# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8
+T,1118,01,10,2088,2,OK,0,-,2088=0000;2089=0000
+# DRY W 01 06 20 0E 00 07 A2 0B
+T,1119,01,06,200E,1,OK,0,-,200E=0007
+T,1130,01,03,20A2,1,OK,1,4,20A2=0000
+D,1130,motor_state_L,0,state
+D,1130,motor_state_R,0,state
+# BOOT STOP confirmed 20A2h=0000
+T,1140,01,03,2022,1,OK,1,4,2022=0001
+D,1140,speed_resolution,1,div
+T,1149,01,03,2008,1,OK,1,4,2008=03E8
+D,1149,max_rpm,1000,r/min
+T,1158,01,03,2000,1,OK,1,4,2000=0000
+D,1158,comm_offline_ms,0,ms
+T,1167,01,03,200F,1,OK,1,4,200F=0001
+D,1167,sync_flag,1,flag
+T,1176,01,03,2007,1,OK,1,4,2007=0000
+D,1176,power_on_lock_mode,0,mode
+T,1185,01,03,2011,1,OK,1,4,2011=0005
+D,1185,quick_stop_code,5,code
+T,1194,01,03,2023,1,OK,1,4,2023=0000
+D,1194,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,1203,01,03,20A5,2,OK,1,4,20A5=0000;20A6=0000
+D,1203,error_code_L,0,bits
+D,1203,error_code_R,0,bits
+T,1213,01,03,20A2,1,OK,1,4,20A2=0000
+D,1213,motor_state_L,0,state
+D,1213,motor_state_R,0,state
+S,1213,DISARMED
+# source: dashboard-261126-110757.log 行 61443–61486
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2a (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,609,BOOT
+# PROBE attempt 1/3
+T,1117,01,03,20A0,1,OK,1,3,20A0=65C9
+D,1117,sw_version,26057,raw
+# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8
+T,1117,01,10,2088,2,OK,0,-,2088=0000;2089=0000
+# DRY W 01 06 20 0E 00 07 A2 0B
+T,1118,01,06,200E,1,OK,0,-,200E=0007
+T,1128,01,03,20A2,1,OK,1,3,20A2=0000
+D,1128,motor_state_L,0,state
+D,1128,motor_state_R,0,state
+# BOOT STOP confirmed 20A2h=0000
+T,1138,01,03,2022,1,OK,1,3,2022=0001
+D,1138,speed_resolution,1,div
+T,1146,01,03,2008,1,OK,1,3,2008=03E8
+D,1146,max_rpm,1000,r/min
+T,1154,01,03,2000,1,OK,1,3,2000=0000
+D,1154,comm_offline_ms,0,ms
+T,1162,01,03,200F,1,OK,1,3,200F=0001
+D,1162,sync_flag,1,flag
+T,1170,01,03,2007,1,OK,1,3,2007=0000
+D,1170,power_on_lock_mode,0,mode
+T,1178,01,03,2011,1,OK,1,3,2011=0005
+D,1178,quick_stop_code,5,code
+T,1186,01,03,2023,1,OK,1,3,2023=0000
+D,1186,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,1195,01,03,20A5,2,OK,1,4,20A5=0000;20A6=0000
+D,1195,error_code_L,0,bits
+D,1195,error_code_R,0,bits
+T,1204,01,03,20A2,1,OK,1,3,20A2=0000
+D,1204,motor_state_L,0,state
+D,1204,motor_state_R,0,state
+S,1204,DISARMED
+# source: dashboard-261126-110757.log 行 61536–61579
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,610,BOOT
+# PROBE attempt 1/3
+T,1119,01,03,20A0,1,OK,1,4,20A0=65C9
+D,1119,sw_version,26057,raw
+# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8
+T,1119,01,10,2088,2,OK,0,-,2088=0000;2089=0000
+# DRY W 01 06 20 0E 00 07 A2 0B
+T,1120,01,06,200E,1,OK,0,-,200E=0007
+T,1131,01,03,20A2,1,OK,1,4,20A2=0000
+D,1131,motor_state_L,0,state
+D,1131,motor_state_R,0,state
+# BOOT STOP confirmed 20A2h=0000
+T,1141,01,03,2022,1,OK,1,4,2022=0001
+D,1141,speed_resolution,1,div
+T,1150,01,03,2008,1,OK,1,4,2008=03E8
+D,1150,max_rpm,1000,r/min
+T,1159,01,03,2000,1,OK,1,4,2000=0000
+D,1159,comm_offline_ms,0,ms
+T,1168,01,03,200F,1,OK,1,4,200F=0001
+D,1168,sync_flag,1,flag
+T,1177,01,03,2007,1,OK,1,4,2007=0000
+D,1177,power_on_lock_mode,0,mode
+T,1186,01,03,2011,1,OK,1,4,2011=0005
+D,1186,quick_stop_code,5,code
+T,1195,01,03,2023,1,OK,1,4,2023=0000
+D,1195,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,1204,01,03,20A5,2,OK,1,4,20A5=0000;20A6=0000
+D,1204,error_code_L,0,bits
+D,1204,error_code_R,0,bits
+T,1214,01,03,20A2,1,OK,1,4,20A2=0000
+D,1214,motor_state_L,0,state
+D,1214,motor_state_R,0,state
+S,1214,DISARMED
+# source: dashboard-261126-110757.log 行 61625–61668
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2a (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,610,BOOT
+# PROBE attempt 1/3
+T,1119,01,03,20A0,1,OK,1,4,20A0=65C9
+D,1119,sw_version,26057,raw
+# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8
+T,1119,01,10,2088,2,OK,0,-,2088=0000;2089=0000
+# DRY W 01 06 20 0E 00 07 A2 0B
+T,1120,01,06,200E,1,OK,0,-,200E=0007
+T,1131,01,03,20A2,1,OK,1,4,20A2=0000
+D,1131,motor_state_L,0,state
+D,1131,motor_state_R,0,state
+# BOOT STOP confirmed 20A2h=0000
+T,1140,01,03,2022,1,OK,1,3,2022=0001
+D,1140,speed_resolution,1,div
+T,1148,01,03,2008,1,OK,1,3,2008=03E8
+D,1148,max_rpm,1000,r/min
+T,1156,01,03,2000,1,OK,1,3,2000=0000
+D,1156,comm_offline_ms,0,ms
+T,1164,01,03,200F,1,OK,1,3,200F=0001
+D,1164,sync_flag,1,flag
+T,1172,01,03,2007,1,OK,1,3,2007=0000
+D,1172,power_on_lock_mode,0,mode
+T,1180,01,03,2011,1,OK,1,3,2011=0005
+D,1180,quick_stop_code,5,code
+T,1188,01,03,2023,1,OK,1,3,2023=0000
+D,1188,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,1197,01,03,20A5,2,OK,1,4,20A5=0000;20A6=0000
+D,1197,error_code_L,0,bits
+D,1197,error_code_R,0,bits
+T,1206,01,03,20A2,1,OK,1,3,20A2=0000
+D,1206,motor_state_L,0,state
+D,1206,motor_state_R,0,state
+S,1206,DISARMED
+# source: dashboard-261126-110757.log 行 62009–62052
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2a (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,611,BOOT
+# PROBE attempt 1/3
+T,1119,01,03,20A0,1,OK,1,3,20A0=65C9
+D,1119,sw_version,26057,raw
+# DRY W 01 10 20 88 00 02 04 00 00 00 00 63 A8
+T,1119,01,10,2088,2,OK,0,-,2088=0000;2089=0000
+# DRY W 01 06 20 0E 00 07 A2 0B
+T,1120,01,06,200E,1,OK,0,-,200E=0007
+T,1131,01,03,20A2,1,OK,1,4,20A2=0000
+D,1131,motor_state_L,0,state
+D,1131,motor_state_R,0,state
+# BOOT STOP confirmed 20A2h=0000
+T,1140,01,03,2022,1,OK,1,3,2022=0001
+D,1140,speed_resolution,1,div
+T,1148,01,03,2008,1,OK,1,3,2008=03E8
+D,1148,max_rpm,1000,r/min
+T,1156,01,03,2000,1,OK,1,3,2000=0000
+D,1156,comm_offline_ms,0,ms
+T,1164,01,03,200F,1,OK,1,3,200F=0001
+D,1164,sync_flag,1,flag
+T,1172,01,03,2007,1,OK,1,3,2007=0000
+D,1172,power_on_lock_mode,0,mode
+T,1180,01,03,2011,1,OK,1,3,2011=0005
+D,1180,quick_stop_code,5,code
+T,1188,01,03,2023,1,OK,1,3,2023=0000
+D,1188,overspeed_check,0,flag
+# DRY W 01 06 20 00 01 F4 82 1D
+T,1197,01,03,20A5,2,OK,1,4,20A5=0000;20A6=0000
+D,1197,error_code_L,0,bits
+D,1197,error_code_R,0,bits
+T,1206,01,03,20A2,1,OK,1,3,20A2=0000
+D,1206,motor_state_L,0,state
+D,1206,motor_state_R,0,state
+S,1206,DISARMED
+# source: dashboard-261126-113432.log 行 367–377
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,611,BOOT
+# PROBE attempt 1/3
+T,1216,01,03,20A0,1,TIMEOUT,1,-,-
+# PROBE attempt 2/3
+T,1821,01,03,20A0,1,TIMEOUT,1,-,-
+# PROBE attempt 3/3
+T,2426,01,03,20A0,1,TIMEOUT,1,-,-
+S,2426,FAULT_STOP
+S,2426,LATCHED
+# LATCHED reason=PROBE_FAIL detail=0x1
+# source: dump-261126-114357.log 行 15579–15591
+# BOOT seq=35
+# STATE LATCHED reason=PROBE_FAIL
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,612,BOOT
+# PROBE attempt 1/3
+T,1217,01,03,20A0,1,TIMEOUT,1,-,-
+# PROBE attempt 2/3
+T,1822,01,03,20A0,1,TIMEOUT,1,-,-
+# PROBE attempt 3/3
+T,2427,01,03,20A0,1,TIMEOUT,1,-,-
+S,2427,FAULT_STOP
+S,2427,LATCHED
+# LATCHED reason=PROBE_FAIL detail=0x1
+# source: dump-261126-115336.log 行 15610–15622
+# BOOT seq=38
+# STATE LATCHED reason=PROBE_FAIL
+# T,ms,slave,fc,addr,count,status,attempts,rtt_ms,values | D,ms,name,value,unit | S,ms,state
+S,614,BOOT
+# PROBE attempt 1/3
+T,1219,01,03,20A0,1,TIMEOUT,1,-,-
+# PROBE attempt 2/3
+T,1824,01,03,20A0,1,TIMEOUT,1,-,-
+# PROBE attempt 3/3
+T,2429,01,03,20A0,1,TIMEOUT,1,-,-
+S,2429,FAULT_STOP
+S,2429,LATCHED
+# LATCHED reason=PROBE_FAIL detail=0x1
