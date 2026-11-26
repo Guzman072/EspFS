@@ -76,16 +76,12 @@ class FakeSerialModule:
 
 
 class OpenWithoutResetTest(unittest.TestCase):
-    def test_dtr_rts_false_before_open(self):
+    def test_open_does_not_set_dtr_or_rts(self):
         stop = threading.Event()
         mod = FakeSerialModule([[b""]], stop)
         ser = open_without_reset("/dev/ttyUSB9", mod)
-        names = [c[0] for c in ser.calls]
-        self.assertLess(names.index("dtr"), names.index("open"))
-        self.assertLess(names.index("rts"), names.index("open"))
-        self.assertIn(("dtr", False), ser.calls)
-        self.assertIn(("rts", False), ser.calls)
-        self.assertIn(("baudrate", 115200), ser.calls)
+        self.assertEqual(ser.calls, [("port", "/dev/ttyUSB9"), ("baudrate", 115200),
+                                     ("timeout", 0.1), ("exclusive", True), ("open", None)])
 
 
 class DetectAndHoldersTest(unittest.TestCase):

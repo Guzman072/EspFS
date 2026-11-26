@@ -69,15 +69,17 @@ def busy_message(port: str, holders: list[tuple[int, str]]) -> str:
 
 
 def open_without_reset(port: str, serial_module=None):
-    """先把 DTR、RTS 設為 False 再 open，避免 ESP32 自動重置電路把板子重開機。"""
+    """沿用 pyserial 的 DTR／RTS 預設值（2026-11-26 V3 實測）。
+
+    舊開法在 open 前把兩線設為 False，pyserial 開埠時套用設定後約
+    0.05 秒出現 POWERON。V3 兩次開關埠與一次 Type-C 拔插均未觀察到重置。
+    """
     if serial_module is None:
         import serial as serial_module  # 延後匯入：重播與測試不需要 pyserial
     ser = serial_module.Serial()
     ser.port = port
     ser.baudrate = BAUDRATE
     ser.timeout = READ_TIMEOUT_S
-    ser.dtr = False
-    ser.rts = False
     ser.exclusive = True  # flock；另一個也用 exclusive 的程式會被擋下
     ser.open()
     return ser
