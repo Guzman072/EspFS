@@ -170,6 +170,17 @@ void DriveFsm::step() {
         case DriveState::ARMED: doArmed(now); break;
         default: break;  // ARMING／DISARMING／FAULT_STOP 在一次 step() 內完成；LATCHED 什麼都不做
     }
+    if (turnBoostOn_ && state_ != DriveState::ARMED) {
+        reportTurnBoost(false, remote_.channel(kTurnBoostChannel));
+    }
+}
+
+void DriveFsm::reportTurnBoost(bool on, unsigned raw) {
+    if (on == turnBoostOn_) return;
+    turnBoostOn_ = on;
+    char line[40];
+    std::snprintf(line, sizeof line, "# TURN BOOST %s ch3=%u", on ? "on" : "off", raw);
+    out_.line(line);
 }
 
 bool DriveFsm::readOne(uint16_t addr, uint16_t& value) {
@@ -418,10 +429,12 @@ void DriveFsm::doArmed(uint32_t now) {
     const unsigned throttle = remote_.channel(cfg_.throttleCh);
     const float want = throttleToRpm(throttle, cfg_.deadband, cfg_.speedLimitRpm);
     const bool steering = cfg_.steerCh >= 0;
+    const unsigned boostRaw = steering ? remote_.channel(kTurnBoostChannel) : 0;
+    const bool turnBoost = boostRaw >= kTurnBoostOnThreshold && boostRaw <= kChannelValidMax;
     WheelTargets targets{want, want};
     if (steering) {
         const float input = throttleToRpm(remote_.channel(cfg_.steerCh), cfg_.deadband, 1.0f) * kSteerInputSign;
-        targets = mixWheelTargets(want, input, cfg_.speedLimitRpm);
+        targets = mixWheelTargets(want, input, cfg_.speedLimitRpm, turnBoost);
     }
     const uint32_t dt = now - lastCmdAt_;
     lastCmdAt_ = now;
@@ -474,6 +487,7 @@ void DriveFsm::doArmed(uint32_t now) {
     const int vl = absInt(normalizedVelocity01(fb[0], cfg_.leftSign));
     const int vr = absInt(normalizedVelocity01(fb[1], cfg_.rightSign));
     if (vl > limit01 || vr > limit01) return doFault(FaultReason::OVERSPEED, static_cast<uint32_t>(vl > vr ? vl : vr));
+    reportTurnBoost(turnBoost, boostRaw);
 }
 
 void DriveFsm::doDisarm(bool armSwitchOff) {

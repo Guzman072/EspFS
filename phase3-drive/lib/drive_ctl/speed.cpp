@@ -25,16 +25,21 @@ float throttleToRpm(int ibusValue, int deadband, float limitRpm) {
     return x > 0 ? mag : -mag;
 }
 
-WheelTargets mixWheelTargets(float throttleRpm, float steeringInput, float limitRpm) {
+WheelTargets mixWheelTargets(float throttleRpm, float steeringInput, float limitRpm, bool turnBoost) {
+    if (throttleRpm == 0.0f) {
+        if (steeringInput == 0.0f) return {0.0f, 0.0f};
+        const float outer = std::min(kInPlaceMaxRpm, limitRpm) * std::min(1.0f, std::fabs(steeringInput));
+        const float inner = turnBoost ? outer * kTurnBoostInnerSign : 0.0f;
+        return steeringInput < 0.0f ? WheelTargets{inner, outer} : WheelTargets{outer, inner};
+    }
+
     float turn;
     if (throttleRpm > 0.0f) {
         const float requested = steeringInput * kSteeringGain * limitRpm;
         turn = std::max(-throttleRpm, std::min(requested, throttleRpm));
-    } else if (throttleRpm < 0.0f) {
+    } else {
         // 倒車時轉向反號，差速隨油門大小變化，兩輪目標均維持後退。
         turn = steeringInput * kSteeringGain * throttleRpm;
-    } else {
-        turn = steeringInput * kInPlaceMaxRpm;
     }
 
     WheelTargets targets{throttleRpm + turn, throttleRpm - turn};

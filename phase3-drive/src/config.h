@@ -33,6 +33,8 @@
 #ifdef STEER_CH
 static_assert(STEER_CH >= 0 && STEER_CH < kRemoteChannels, "STEER_CH 必須在 i-BUS 通道範圍內");
 static_assert(STEER_CH != THROTTLE_CH && STEER_CH != ARM_CH, "STEER_CH 不可與油門或 SWA 共用通道");
+static_assert(kTurnBoostChannel != THROTTLE_CH && kTurnBoostChannel != ARM_CH && kTurnBoostChannel != STEER_CH,
+              "CH3 加力不可與油門、SWA 或轉向共用通道");
 constexpr int kSteeringChannel = STEER_CH;
 #else
 constexpr int kSteeringChannel = -1;

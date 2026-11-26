@@ -872,9 +872,11 @@ static void test_real_signs_normalize_feedback_in_d_lines() {
 }
 
 // 兩個 native 環境都用假遙控器測混控；既有 Rig 預設仍走直行路徑。
+constexpr int kSteeringThrottle = 1;  // 混控版油門在 CH2，CH3 保留給加力。
 constexpr int kSteer = 3;
 static FsmConfig steeringConfig() {
     FsmConfig c = Rig::realConfig();
+    c.throttleCh = kSteeringThrottle;
     c.steerCh = kSteer;
     return c;
 }
@@ -895,7 +897,7 @@ static void expectSteeringTarget(const Rig& g, float steer, float left, float ri
         if (it->compare(0, 2, "C,") != 0) continue;
         SteeringCommand c;
         TEST_ASSERT_EQUAL_INT(8, parseSteeringCommand(*it, c));
-        TEST_ASSERT_EQUAL_UINT(g.r.ch[kThrottle], c.throttle);
+        TEST_ASSERT_EQUAL_UINT(g.r.ch[kSteeringThrottle], c.throttle);
         TEST_ASSERT_FLOAT_WITHIN(0.01f, steer, c.steerRpm);
         TEST_ASSERT_FLOAT_WITHIN(0.01f, left, c.leftTarget);
         TEST_ASSERT_FLOAT_WITHIN(0.01f, right, c.rightTarget);
@@ -922,12 +924,10 @@ static void test_steering_maps_deadband_and_turns_both_ways_in_forward_and_rever
         {2000, 1000, -12, 36, 60, 360, -600},
         {1230, 1000, 7.5f, -22.5f, -37.5f, -225, 375},
         {1230, 2000, -7.5f, -37.5f, -22.5f, -375, 225},
-        {1500, 1000, -45, -45, 45, -450, -450},
-        {1500, 2000, 45, 45, -45, 450, 450},
         {1500, 1540, 0, 0, 0, 0, 0},
     };
     for (const auto& c : cases) {
-        g.r.ch[kThrottle] = c.throttle;
+        g.r.ch[kSteeringThrottle] = c.throttle;
         g.r.ch[kSteer] = c.steer;
         g.run(2500);
         TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
@@ -942,23 +942,133 @@ static void test_steering_maps_deadband_and_turns_both_ways_in_forward_and_rever
 #endif
 }
 
+static void test_turn_boost_in_place_left_right_full_and_half_throw() {
+    Rig g(steeringConfig());
+    g.d.regs[0x2022] = 10;
+    g.bootOnly();
+    g.unlockViaSwitch();
+    struct Case { uint16_t throttle, steer, boost; float left, right; };
+    const Case cases[] = {
+        {1500, 1000, 1000,   0,  60}, {1500, 2000, 1000,  60,   0},
+        {1500, 1000, 2000, -60,  60}, {1500, 2000, 2000,  60, -60},
+        {1460, 1230, 1000,   0,  30}, {1540, 1770, 1000,  30,   0},
+        {1460, 1230, 2000, -30,  30}, {1540, 1770, 2000,  30, -30},
+        {1500, 1460, 1000,   0,   0}, {1500, 1540, 1000,   0,   0},
+        {1500, 1460, 2000,   0,   0}, {1500, 1540, 2000,   0,   0},
+    };
+    for (const auto& c : cases) {
+        g.r.ch[kSteeringThrottle] = c.throttle;
+        g.r.ch[kSteer] = c.steer;
+        g.r.ch[kTurnBoostChannel] = c.boost;
+        g.run(2200);
+        TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
+        expectSteeringTarget(g, (c.left - c.right) * 0.5f, c.left, c.right, c.left * 10, -c.right * 10);
+    }
+}
+
+static void test_turn_boost_threshold_and_invalid_ch3_in_strict_safety() {
+    auto cfg = steeringConfig();
+    cfg.strictSafety = true;
+    Rig g(cfg);
+    g.bootOnly();
+    g.unlockViaSwitch();
+    g.r.ch[kSteer] = 1000;
+    struct Case { uint16_t raw; bool boost; };
+    const Case cases[] = {{1000, false}, {1899, false}, {1900, true}, {2000, true},
+                          {2001, false}, {1900, true}, {999, false}, {0, false}};
+    for (const auto& c : cases) {
+        g.r.ch[kTurnBoostChannel] = c.raw;
+        g.run(1200);
+        TEST_ASSERT_EQUAL(DriveState::ARMED, g.fsm.state());
+        const int inner = c.boost ? -60 : 0;
+        expectSteeringTarget(g, (inner - 60) * 0.5f, inner, 60, inner, -60);
+    }
+}
+
+static void test_turn_boost_switch_preserves_the_independent_wheel_slew() {
+    Rig g(steeringConfig());
+    g.d.regs[0x2022] = 10;
+    g.bootOnly();
+    g.unlockViaSwitch();
+    g.r.ch[kSteer] = 2000;
+    g.run(1200);
+    expectSteeringTarget(g, 30, 60, 0, 600, 0);
+
+    for (bool boost : {true, false}) {
+        const size_t mark = g.log.lines.size();
+        g.r.ch[kTurnBoostChannel] = boost ? 1900 : 1899;
+        g.run(1200);
+        SteeringCommand prev;
+        bool sawTransition = false;
+        for (size_t i = 0; i < g.log.lines.size(); ++i) {
+            SteeringCommand current;
+            if (parseSteeringCommand(g.log.lines[i], current) != 8) continue;
+            if (i >= mark) {
+                TEST_ASSERT_EQUAL_INT(600, current.leftRaw);
+                const float maxStep = kSlewRpmPerSec * (current.ms - prev.ms) / 100.0f + 1.0f;
+                TEST_ASSERT_FLOAT_WITHIN(maxStep, prev.rightRaw, current.rightRaw);
+                if (!sawTransition) TEST_ASSERT_TRUE(current.rightRaw > 0 && current.rightRaw < 600);
+                sawTransition = true;
+            }
+            prev = current;
+        }
+        TEST_ASSERT_TRUE(sawTransition);
+        expectSteeringTarget(g, boost ? 60 : 30, 60, boost ? -60 : 0, 600, boost ? 600 : 0);
+    }
+}
+
+static void test_turn_boost_logs_edges_once_and_turns_off_on_signal_loss() {
+    for (auto lost : {RemoteStatus::WAITING, RemoteStatus::STALE}) {
+        Rig g(steeringConfig());
+        g.bootOnly();
+        g.unlockViaSwitch();
+        TEST_ASSERT_EQUAL_INT(0, g.log.count("# TURN BOOST"));
+
+        g.r.ch[kTurnBoostChannel] = 1900;
+        g.run(200);
+        g.r.ch[kTurnBoostChannel] = 2000;
+        g.r.ch[kSteeringThrottle] = 1770;
+        g.run(200);
+        TEST_ASSERT_EQUAL_INT(1, g.log.count("# TURN BOOST"));
+        TEST_ASSERT_TRUE(g.log.has("# TURN BOOST on ch3=1900"));
+
+        g.r.ch[kTurnBoostChannel] = 2001;
+        g.run(200);
+        g.r.ch[kTurnBoostChannel] = 1899;
+        g.run(200);
+        TEST_ASSERT_EQUAL_INT(2, g.log.count("# TURN BOOST"));
+        TEST_ASSERT_TRUE(g.log.has("# TURN BOOST off ch3=2001"));
+
+        g.r.ch[kTurnBoostChannel] = 2000;
+        g.run(200);
+        g.r.st = lost;
+        g.run(200);
+        TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+        TEST_ASSERT_EQUAL_INT(4, g.log.count("# TURN BOOST"));
+        TEST_ASSERT_TRUE(g.log.has("# TURN BOOST on ch3=2000"));
+        const int disarming = g.log.indexOf(",DISARMING");
+        const int off = g.log.indexOf("# TURN BOOST off ch3=2000");
+        TEST_ASSERT_TRUE(disarming >= 0 && off > disarming);
+    }
+}
+
 static void test_steering_preserves_wheel_ratio_at_limit_and_clamps_ibus_input() {
     Rig g(steeringConfig());
     g.bootOnly();
     g.unlockViaSwitch();
     g.r.ch[kSteer] = 2400;  // 超出 CH4 上界時仍只用滿行程
-    g.run(1000);
-    expectSteeringTarget(g, 45, 45, -45, 45, 45);
-    g.r.ch[kThrottle] = 1586;  // 6 r/min，前進差速限於 6 r/min
-    g.run(900);  // 內輪從 −45 r/min 回零至少需要 750 ms
+    g.run(1200);
+    expectSteeringTarget(g, 30, 60, 0, 60, 0);
+    g.r.ch[kSteeringThrottle] = 1586;  // 6 r/min，前進差速限於 6 r/min
+    g.run(900);
     expectSteeringTarget(g, 6, 12, 0, 12, 0);
-    g.r.ch[kThrottle] = 2000;
+    g.r.ch[kSteeringThrottle] = 2000;
     g.run(2000);
     expectSteeringTarget(g, 12, 60, 36, 60, -36);
-    g.r.ch[kThrottle] = 1000;
+    g.r.ch[kSteeringThrottle] = 1000;
     g.run(3300);
     expectSteeringTarget(g, -12, -60, -36, -60, 36);
-    g.r.ch[kThrottle] = g.r.ch[kSteer] = 1500;
+    g.r.ch[kSteeringThrottle] = g.r.ch[kSteer] = 1500;
     g.run(1700);
     expectSteeringTarget(g, 0, 0, 0, 0, 0);
 }
@@ -968,7 +1078,7 @@ static void test_steering_each_wheel_slews_and_holds_its_own_target() {
     g.d.regs[0x2022] = 10;
     g.bootOnly();
     g.unlockViaSwitch();
-    g.r.ch[kThrottle] = 1770;
+    g.r.ch[kSteeringThrottle] = 1770;
     g.r.ch[kSteer] = 2000;
     g.run(1400);
     SteeringCommand prev;
@@ -996,11 +1106,12 @@ static void test_steering_pivot_to_reverse_changes_targets_but_slews_commands() 
     g.bootOnly();
     g.unlockViaSwitch();
     g.r.ch[kSteer] = 1000;
-    g.run(1000);
-    expectSteeringTarget(g, -45, -45, 45, -450, -450);
+    g.r.ch[kTurnBoostChannel] = 2000;
+    g.run(1200);
+    expectSteeringTarget(g, -60, -60, 60, -600, -600);
     const size_t transition = g.log.lines.size();
-    g.r.ch[kThrottle] = 1230;
-    g.run(1700);
+    g.r.ch[kSteeringThrottle] = 1230;
+    g.run(1800);
 
     SteeringCommand prev;
     bool sawTransition = false;
@@ -1030,11 +1141,11 @@ static void test_steering_requires_continuous_overlap_of_both_centered_axes() {
     g.r.ch[kArm] = 2000;
     g.run(600);
     TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
-    g.r.ch[kThrottle] = 1541;
+    g.r.ch[kSteeringThrottle] = 1541;
     g.r.ch[kSteer] = 1460;
     g.run(600);
     TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
-    g.r.ch[kThrottle] = 1540;
+    g.r.ch[kSteeringThrottle] = 1540;
     g.run(450);
     TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
     g.run(100);
@@ -1042,7 +1153,7 @@ static void test_steering_requires_continuous_overlap_of_both_centered_axes() {
 }
 
 static void test_steering_restarts_center_timer_on_brief_excursion_or_signal_loss() {
-    for (int event : {kThrottle, kSteer, -1, -2}) {
+    for (int event : {kSteeringThrottle, kSteer, -1, -2}) {
         Rig g(steeringConfig());
         g.bootOnly();
         g.run(400);
@@ -1064,7 +1175,7 @@ static void test_steering_disarms_with_frozen_ch4_and_with_stale_then_rearms_fro
         Rig g(steeringConfig());
         g.bootOnly();
         g.unlockViaSwitch();
-        g.r.ch[kThrottle] = 1770;
+        g.r.ch[kSteeringThrottle] = 1770;
         g.r.ch[kSteer] = 2000;
         g.run(1800);
         expectSteeringTarget(g, 15, 45, 15, 45, -15);
@@ -1072,7 +1183,7 @@ static void test_steering_disarms_with_frozen_ch4_and_with_stale_then_rearms_fro
         const size_t logMark = g.log.lines.size();
         if (stale) g.r.st = RemoteStatus::STALE;
         else g.r.ch[kArm] = 1000;  // CH7 failsafe 生效，CH4 仍保留舊值
-        g.r.ch[kThrottle] = 1500;
+        g.r.ch[kSteeringThrottle] = 1500;
         g.run(1200);
         TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
         TEST_ASSERT_TRUE(g.log.indexOf(",DISARMING", logMark) >= 0);
@@ -1132,7 +1243,7 @@ static void test_steering_logs_append_fields_and_straight_line_keeps_original_fo
             if (commands > 0) {
                 TEST_ASSERT_EQUAL_INT(mixed ? 8 : 5, commands);
                 TEST_ASSERT_EQUAL_UINT(1500, c.throttle);
-                TEST_ASSERT_EQUAL_INT(c.leftRaw, c.rightRaw);  // 原地轉向時左右馬達原始值同號
+                TEST_ASSERT_EQUAL_INT(0, c.rightRaw);  // 關加力且右轉時，右輪維持零速。
                 if (!mixed) TEST_ASSERT_EQUAL_INT(0, c.leftRaw);
                 sawCommand = true;
             }
@@ -1325,6 +1436,10 @@ void run_fsm_tests() {
     RUN_TEST(test_real_signs_write_right_wheel_reversed);
     RUN_TEST(test_real_signs_normalize_feedback_in_d_lines);
     RUN_TEST(test_steering_maps_deadband_and_turns_both_ways_in_forward_and_reverse);
+    RUN_TEST(test_turn_boost_in_place_left_right_full_and_half_throw);
+    RUN_TEST(test_turn_boost_threshold_and_invalid_ch3_in_strict_safety);
+    RUN_TEST(test_turn_boost_switch_preserves_the_independent_wheel_slew);
+    RUN_TEST(test_turn_boost_logs_edges_once_and_turns_off_on_signal_loss);
     RUN_TEST(test_steering_preserves_wheel_ratio_at_limit_and_clamps_ibus_input);
     RUN_TEST(test_steering_each_wheel_slews_and_holds_its_own_target);
     RUN_TEST(test_steering_pivot_to_reverse_changes_targets_but_slews_commands);

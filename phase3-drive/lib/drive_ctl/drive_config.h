@@ -28,8 +28,14 @@ constexpr bool kSteeringEnabled = true;
 constexpr bool kSteeringEnabled = false;
 #endif
 constexpr float kSteeringGain = 0.25f;
-constexpr float kInPlaceMaxRpm = 45.0f;
+constexpr int kTurnBoostChannel = 2;                       // CH3，0 起算
+constexpr unsigned kTurnBoostOnThreshold = 1900;
+constexpr int kTurnBoostInnerSign = -1;                    // 加力時內側輪反轉
+constexpr float kInPlaceMaxRpm = 60.0f;
 static_assert(kInPlaceMaxRpm > 0.0f && kInPlaceMaxRpm <= kSpeedLimitRpm, "原地轉向不得超過單輪速度上限");
+static_assert(kTurnBoostOnThreshold >= kChannelValidMin && kTurnBoostOnThreshold <= kChannelValidMax,
+              "加力門檻必須在 i-BUS 通道有效範圍內");
+static_assert(kTurnBoostInnerSign == 1 || kTurnBoostInnerSign == -1, "加力內側輪方向只能是 +1 或 -1");
 constexpr int kSteerInputSign = 1;                          // 假設右推＝2000，待 dryrun 確認
 static_assert(kSteerInputSign == 1 || kSteerInputSign == -1, "轉向輸入極性只能是 +1 或 -1");
 

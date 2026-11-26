@@ -41,9 +41,14 @@ static void test_throttle_mapping() {
 static void test_mixed_targets_stay_within_limit_and_reverse_has_two_negative_targets() {
     for (int throttle = -60; throttle <= 60; ++throttle) {
         for (int steering = -10; steering <= 10; ++steering) {
-            const auto targets = mixWheelTargets(throttle, steering / 10.0f, kSpeedLimitRpm);
-            TEST_ASSERT_TRUE(std::fabs(targets.left) <= 60.00001f);
-            TEST_ASSERT_TRUE(std::fabs(targets.right) <= 60.00001f);
+            const auto targets = mixWheelTargets(throttle, steering / 10.0f, kSpeedLimitRpm, false);
+            const auto boosted = mixWheelTargets(throttle, steering / 10.0f, kSpeedLimitRpm, true);
+            TEST_ASSERT_TRUE(std::fabs(targets.left) <= 60.00001f && std::fabs(targets.right) <= 60.00001f);
+            TEST_ASSERT_TRUE(std::fabs(boosted.left) <= 60.00001f && std::fabs(boosted.right) <= 60.00001f);
+            if (throttle != 0) {
+                TEST_ASSERT_EQUAL_FLOAT(targets.left, boosted.left);
+                TEST_ASSERT_EQUAL_FLOAT(targets.right, boosted.right);
+            }
             if (throttle < 0) TEST_ASSERT_TRUE(targets.left < 0.0f && targets.right < 0.0f);
         }
     }
@@ -87,7 +92,10 @@ static void test_overspeed_threshold_is_derived_from_limit_and_factor() {
 }
 static void test_constants_are_the_agreed_defaults() {
     TEST_ASSERT_EQUAL_FLOAT(60.0f, kSpeedLimitRpm);
-    TEST_ASSERT_EQUAL_FLOAT(45.0f, kInPlaceMaxRpm);
+    TEST_ASSERT_EQUAL_FLOAT(60.0f, kInPlaceMaxRpm);
+    TEST_ASSERT_EQUAL_INT(2, kTurnBoostChannel);
+    TEST_ASSERT_EQUAL_UINT(1900, kTurnBoostOnThreshold);
+    TEST_ASSERT_EQUAL_INT(-1, kTurnBoostInnerSign);
     TEST_ASSERT_EQUAL_FLOAT(60.0f, kSlewRpmPerSec);                 // 每 50 ms 3.0 r/min
     TEST_ASSERT_FLOAT_WITHIN(1e-4f, 3.0f, kSlewRpmPerSec * (kControlPeriodMs / 1000.0f));
     TEST_ASSERT_EQUAL_FLOAT(1.2f, kOverspeedFactor);               // 使用者決定（2026-11-23）：1.5 → 1.2

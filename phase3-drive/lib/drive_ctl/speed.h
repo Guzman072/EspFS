@@ -16,7 +16,7 @@ struct WheelTargets {
 };
 
 // 車體座標：前進為正，steeringInput 為死區換算後的轉向值（向左 -1、向右 +1）。
-WheelTargets mixWheelTargets(float throttleRpm, float steeringInput, float limitRpm);
+WheelTargets mixWheelTargets(float throttleRpm, float steeringInput, float limitRpm, bool turnBoost);
 
 // 超速門檻（單位 0.1 r/min，與 20ABh／20ACh 的讀值同單位）＝round(上限 × kOverspeedFactor × 10)。
 int overspeedLimit01(float limitRpm);

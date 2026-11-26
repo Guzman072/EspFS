@@ -78,6 +78,7 @@ private:
     uint32_t lastTick_ = 0;
     uint32_t lastCmdAt_ = 0;
     uint32_t armedTicks_ = 0;
+    bool turnBoostOn_ = false;
     bool sawArmOff_ = false;
     bool centerValid_ = false;
     uint32_t centerSince_ = 0;
@@ -99,6 +100,7 @@ private:
     void blockFor(uint32_t now);
     void clearBlock();
     void updateRemoteFlags(uint32_t now);
+    void reportTurnBoost(bool on, unsigned raw);
 
     void doBoot();
     void doDisarmed(uint32_t now);
