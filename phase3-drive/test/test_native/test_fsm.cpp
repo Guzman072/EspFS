@@ -46,9 +46,74 @@ static void test_boot_probes_only_slave_1() {
     TEST_ASSERT_EQUAL(DriveState::LATCHED, g.fsm.state());
     TEST_ASSERT_EQUAL(FaultReason::PROBE_FAIL, g.fsm.faultReason());
     for (const auto& f : g.t.writes) TEST_ASSERT_EQUAL_UINT8(1, f[0]);
-    TEST_ASSERT_EQUAL_UINT32(kMaxAttempts, g.t.writes.size());
+    TEST_ASSERT_EQUAL_UINT32(3, g.t.writes.size());
     TEST_ASSERT_EQUAL_UINT32(0, g.t.driveWrites.size());  // 還沒使能過，不送停止指令
     TEST_ASSERT_TRUE(g.log.has("# LATCHED reason=PROBE_FAIL"));
+}
+static void test_boot_probe_recovers_from_first_timeout_before_boot_stop() {
+    Rig g(Rig::strictConfig());
+    g.r.ch[kArm] = 2000;
+    g.t.responder = [&g](const std::vector<uint8_t>& frame) {
+        if (g.t.writes.size() == 1) return ScriptedReply{{}, 0};
+        return g.d.handle(frame);
+    };
+    g.bootOnly();
+    TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+    TEST_ASSERT_EQUAL(FaultReason::NONE, g.fsm.faultReason());
+    TEST_ASSERT_TRUE(g.fsm.enabled());
+    const int timeout = g.log.indexOf(",03,20A0,1,TIMEOUT,1,");
+    const int second = g.log.indexOf("# PROBE attempt 2/3");
+    const int success = g.log.indexOf(",03,20A0,1,OK,1,");
+    TEST_ASSERT_TRUE(timeout >= 0 && timeout < second && second < success);
+#ifdef DRIVE_DRYRUN
+    expectPrefix(g, 0, {"R20A0x1", "R20A0x1", "R20A2x1"});
+    TEST_ASSERT_TRUE(g.log.indexOf("# DRY W") > success);
+    TEST_ASSERT_TRUE(g.t.driveWrites.empty());
+#else
+    expectPrefix(g, 0, {"R20A0x1", "R20A0x1", "S2088=0,0", "W200E=0007", "R20A2x1"});
+#endif
+    TEST_ASSERT_TRUE(g.log.has("# BOOT STOP confirmed"));
+    g.run(700);
+    TEST_ASSERT_EQUAL(DriveState::DISARMED, g.fsm.state());
+    TEST_ASSERT_TRUE(g.log.has("# ARM blocked: SWA already on"));
+}
+static void test_boot_probe_timeout_logs_each_attempt_and_respects_budget() {
+    Rig g(Rig::strictConfig());
+    g.r.ch[kArm] = 2000;
+    std::vector<uint32_t> attemptsAt;
+    g.t.responder = [&](const std::vector<uint8_t>&) {
+        // 模擬每次發送花掉 100 ms 等線路靜默，加 1 ms 傳輸時間。
+        g.t.delayMs(101);
+        attemptsAt.push_back(g.t.now);
+        return ScriptedReply{{}, 0};
+    };
+    g.bootOnly();
+    TEST_ASSERT_EQUAL(DriveState::LATCHED, g.fsm.state());
+    TEST_ASSERT_EQUAL(FaultReason::PROBE_FAIL, g.fsm.faultReason());
+    TEST_ASSERT_EQUAL_UINT32(3, attemptsAt.size());
+    TEST_ASSERT_TRUE(attemptsAt[0] >= 500 + 101);
+    for (size_t i = 1; i < attemptsAt.size(); ++i) {
+        TEST_ASSERT_TRUE(attemptsAt[i] - attemptsAt[i - 1] >= kResponseTimeoutMs + 500 + 101);
+    }
+    TEST_ASSERT_TRUE(g.t.now <= 2500);
+    TEST_ASSERT_EQUAL_INT(3, g.log.count(",03,20A0,1,TIMEOUT,1,"));
+    TEST_ASSERT_TRUE(g.log.has("# LATCHED reason=PROBE_FAIL detail=0x1"));
+    TEST_ASSERT_FALSE(g.log.has(",ARMING"));
+    TEST_ASSERT_FALSE(g.log.has("# DRY W"));
+    TEST_ASSERT_TRUE(g.t.driveWrites.empty());
+    expectPrefix(g, 0, {"R20A0x1", "R20A0x1", "R20A0x1"});
+    g.run(700);
+    TEST_ASSERT_EQUAL_UINT32(3, g.t.writes.size());
+}
+static void test_boot_probe_tx_failure_latches_without_retry() {
+    Rig g(Rig::strictConfig());
+    g.t.refuse = true;
+    g.bootOnly();
+    TEST_ASSERT_EQUAL(DriveState::LATCHED, g.fsm.state());
+    TEST_ASSERT_EQUAL(FaultReason::PROBE_FAIL, g.fsm.faultReason());
+    TEST_ASSERT_EQUAL_INT(1, g.log.count("# PROBE attempt"));
+    TEST_ASSERT_TRUE(g.log.has(",03,20A0,1,TX_FAIL,1,"));
+    TEST_ASSERT_TRUE(g.t.driveWrites.empty());
 }
 [[maybe_unused]] static void test_boot_writes_500_when_2000h_is_zero_or_too_large() {
     for (uint16_t initial : {0, 1001, 5000, 32000}) {
@@ -1206,6 +1271,9 @@ static void test_dryrun_rejected_still_latches() {
 void run_fsm_tests() {
     RUN_TEST(test_boot_sequence_and_state);
     RUN_TEST(test_boot_probes_only_slave_1);
+    RUN_TEST(test_boot_probe_recovers_from_first_timeout_before_boot_stop);
+    RUN_TEST(test_boot_probe_timeout_logs_each_attempt_and_respects_budget);
+    RUN_TEST(test_boot_probe_tx_failure_latches_without_retry);
     RUN_TEST(test_boot_leaves_2000h_alone_when_in_range);
     RUN_TEST(test_boot_disables_on_bad_2022h);
     RUN_TEST(test_boot_disables_when_2022h_unreadable);

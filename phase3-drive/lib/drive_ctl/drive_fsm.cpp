@@ -5,6 +5,10 @@
 
 namespace {
 constexpr uint16_t kStatusEnabledMask = 0xC0C0;  // 20A2h：左 bit15–14、右 bit7–6；00 00＝解軸（未使能）
+constexpr uint32_t kBootProbeSettleMs = 500;
+constexpr uint32_t kBootProbeRetryMs = 500;
+constexpr unsigned kBootProbeAttempts = 3;
+static_assert(kBootProbeAttempts <= kLatchAfterFailures, "開機探測不可超過傳輸層允許的失敗次數");
 constexpr uint32_t kStopSampleWindowMs = 3000;
 constexpr int kStopSpeed01 = 10;  // 1.0 r/min，取樣值須嚴格低於此門檻
 
@@ -188,9 +192,20 @@ void DriveFsm::doBoot() {
     std::snprintf(line, sizeof line, "S,%u,BOOT", static_cast<unsigned>(t_.nowMs()));
     out_.line(line);
 
-    // 1. 只探測 Slave ID 1（讀 20A0h 共 1 個）。失敗 → LATCHED（還沒使能過，不必送停止指令）。
+    // 1. UART 已初始化。等冷開機硬體就緒，再清掉等待期間收到的 RX 資料。
+    t_.delayMs(kBootProbeSettleMs);
+    t_.clearRx();
+
+    // 只探測 Slave ID 1 的 20A0h。每次獨立讀取，保留個別失敗的 T 行。
     uint16_t probe[1];
-    const Status ps = link_.read(0x20A0, 1, probe);
+    Status ps = Status::TIMEOUT;
+    for (unsigned attempt = 1; attempt <= kBootProbeAttempts; ++attempt) {
+        if (attempt > 1) t_.delayMs(kBootProbeRetryMs);
+        std::snprintf(line, sizeof line, "# PROBE attempt %u/%u", attempt, kBootProbeAttempts);
+        out_.line(line);
+        ps = link_.read(0x20A0, 1, probe, 1);
+        if (!isRetryableStatus(ps) || link_.latched()) break;
+    }
     if (ps != Status::OK) {
         doFault(FaultReason::PROBE_FAIL, static_cast<uint32_t>(ps));
         return;
