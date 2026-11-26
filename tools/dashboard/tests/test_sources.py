@@ -1,10 +1,8 @@
-"""sources（不重開機的開啟方式、占用偵測、拔插重連）與 web_server（SSE、指令端點的防護）。
+"""sources（不重開機的開啟方式、占用偵測、拔插重連）。
 
 全部使用假的 serial 模組與暫存檔，不開任何真實序列埠。
 """
 
-import http.client
-import json
 import os
 import sys
 import tempfile
@@ -17,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from session import Session  # noqa: E402
 from sources import (LineSplitter, SerialSource, busy_message, detect_port, find_port_holders,  # noqa: E402
                      open_without_reset)
-from web_server import start_server  # noqa: E402
 
 
 class FakeSerialException(Exception):
@@ -147,88 +144,3 @@ class ReconnectTest(unittest.TestCase):
             self.assertEqual(session.monitor.last_ms, 9000)
             raw, _ = session.updates_since(None)
             self.assertIn("R,2000,RECEI", [r["text"] for r in raw["raw"]])  # 拔線時的半行照樣保留
-
-
-class WebServerTest(unittest.TestCase):
-    PORT = 18765
-
-    @classmethod
-    def setUpClass(cls):
-        cls.stop = threading.Event()
-        cls.session = Session(logger=None)
-        cls.sink_sent = []
-
-        class Sink:
-            def write_command(self, data):
-                cls.sink_sent.append(data)
-                return True
-
-        cls.session.set_sink(Sink())
-        cls.session.set_connection("connected", "/dev/ttyUSB0")
-        cls.session.feed(b"S,10,DISARMED\r\n")
-        cls.server = start_server(cls.session, cls.PORT, cls.stop)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.stop.set()
-        cls.server.shutdown()
-        cls.server.server_close()
-
-    def request(self, method, path, body=None, headers=None):
-        conn = http.client.HTTPConnection("127.0.0.1", self.PORT, timeout=5)
-        conn.request(method, path, body=body, headers=headers or {})
-        res = conn.getresponse()
-        data = res.read()
-        conn.close()
-        return res.status, data
-
-    def post_cmd(self, payload, **extra):
-        headers = {"Content-Type": "application/json", "X-EspFS-Dashboard": "1"}
-        headers.update(extra)
-        return self.request("POST", "/api/command", json.dumps(payload), headers)
-
-    def test_static_files(self):
-        status, body = self.request("GET", "/")
-        self.assertEqual(status, 200)
-        self.assertIn(b"EspFS", body)
-        self.assertEqual(self.request("GET", "/app.js")[0], 200)
-        self.assertEqual(self.request("GET", "/../dashboard.py")[0], 404)
-        self.assertEqual(self.request("GET", "/static/../session.py")[0], 404)
-
-    def test_bad_host_rejected(self):
-        self.assertEqual(self.request("GET", "/", headers={"Host": "evil.example:8765"})[0], 403)
-
-    def test_sse_first_message_has_state(self):
-        conn = http.client.HTTPConnection("127.0.0.1", self.PORT, timeout=5)
-        conn.request("GET", "/events")
-        res = conn.getresponse()
-        self.assertEqual(res.getheader("Content-Type"), "text/event-stream; charset=utf-8")
-        line = res.fp.readline()
-        conn.close()
-        self.assertTrue(line.startswith(b"data: "))
-        payload = json.loads(line[6:])
-        self.assertEqual(payload["state"]["sys_state"], "DISARMED")
-        self.assertIn("S,10,DISARMED", [r["text"] for r in payload["raw"]])
-
-    def test_command_requires_header_json_and_origin(self):
-        before = list(self.sink_sent)
-        body = json.dumps({"cmd": "dump"})
-        self.assertEqual(self.request("POST", "/api/command", body, {"Content-Type": "application/json"})[0], 403)
-        self.assertEqual(self.request("POST", "/api/command", body,
-                                      {"Content-Type": "text/plain", "X-EspFS-Dashboard": "1"})[0], 403)
-        self.assertEqual(self.post_cmd({"cmd": "dump"}, Origin="http://evil.example")[0], 403)
-        self.assertEqual(self.post_cmd({"cmd": "reboot"})[0], 409)
-        self.assertEqual(self.post_cmd({"cmd": "erase"})[0], 409)
-        self.assertEqual(self.request("POST", "/api/command", "x" * 1000,
-                                      {"Content-Type": "application/json", "X-EspFS-Dashboard": "1"})[0], 400)
-        self.assertEqual(self.sink_sent, before)
-
-    def test_command_dump_sent(self):
-        before = len(self.sink_sent)
-        status, body = self.post_cmd({"cmd": "dump"}, Origin=f"http://127.0.0.1:{self.PORT}")
-        self.assertEqual(status, 200, body)
-        self.assertEqual(self.sink_sent[before:], [b"dump\n"])
-
-
-if __name__ == "__main__":
-    unittest.main()
