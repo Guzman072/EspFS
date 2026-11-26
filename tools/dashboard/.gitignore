@@ -1,0 +1,7 @@
+# 儀表板產生的記錄（--log-dir 指到這裡時）與 Python 快取
+dashboard-*.log
+*-series.csv
+dump-*.log
+__pycache__/
+# 測試資料要提交
+!tests/fixtures/*.log

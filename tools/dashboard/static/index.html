@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EspFS 儀表板</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="topbar">
+  <span id="conn" class="pill">連線中…</span>
+  <span class="kv"><b>埠</b> <span id="port">—</span></span>
+  <span class="kv"><b>uptime</b> <span id="uptime">—</span></span>
+  <span class="kv"><b>開機次數</b> <span id="boots">0</span></span>
+  <span class="kv"><b>log</b> <span id="logfile">—</span>（<span id="loglines">0</span> 行）</span>
+  <span id="dry" class="badge dry" hidden>DRY 版：不會送速度</span>
+  <span id="dumpbadge" class="badge dump" hidden>傾倒中</span>
+</header>
+
+<div id="banners">
+  <div id="busy" class="banner warn" hidden></div>
+  <div id="stale" class="banner warn" hidden></div>
+  <div id="latched" class="banner danger" hidden>
+    <div class="big">⚠ LATCHED：已鎖定停機</div>
+    <div>reason=<span id="latchedReason">—</span> detail=<span id="latchedDetail">—</span></div>
+    <div id="probeHint" hidden>PROBE_FAIL：請按板子上的 RESET 重新開機</div>
+    <div class="small">依規則 21 停止並回報；不自動清故障。</div>
+  </div>
+  <div id="dumping" class="banner info" hidden>傾倒中（板上舊資料重播）：即時面板與曲線已凍結，所有行照常寫入記錄。已收 <span id="dumpLines">0</span> 行 → <span id="dumpFile">—</span></div>
+</div>
+
+<main class="grid">
+  <section class="card live" id="statusCard">
+    <h2>狀態</h2>
+    <div class="state-big" id="sysState">—</div>
+    <div class="kv">reason：<span id="reason">—</span></div>
+    <hr>
+    <div class="kv">接收器：<span id="rxStatus" class="tag">—</span></div>
+    <div class="kv">frame_age：<span id="frameAge">—</span> ms</div>
+    <div class="kv">values_unchanged：<span id="unchanged">—</span> ms</div>
+    <hr>
+    <div class="buttons">
+      <button id="btnDump" disabled>dump</button>
+      <button id="btnErase" class="danger" disabled>erase</button>
+    </div>
+    <div class="small" id="cmdReason">—</div>
+    <div class="small" id="cmdResult"></div>
+  </section>
+
+  <section class="card live" id="remoteCard">
+    <h2>遙控</h2>
+    <canvas id="stick" width="220" height="220"></canvas>
+    <div class="rc-values">
+      <div>CH2 油門 <b id="ch2">—</b></div>
+      <div>CH4 轉向 <b id="ch4">—</b></div>
+      <div>CH7 SWA <b id="ch7">—</b> <span id="swa" class="tag">—</span></div>
+    </div>
+    <div class="small">中點 1500；灰帶為死區 1460–1540（韌體 kDeadband=40）</div>
+  </section>
+
+  <section class="card live" id="wheelCard">
+    <h2>輪子（r/min，邏輯值）</h2>
+    <canvas id="wheels" width="320" height="260"></canvas>
+    <table class="wheel-table">
+      <thead><tr><th></th><th>左 L</th><th>右 R</th></tr></thead>
+      <tbody>
+        <tr><th>實際</th><td id="actL">—</td><td id="actR">—</td></tr>
+        <tr><th>目標 tgt</th><td id="tgtL">—</td><td id="tgtR">—</td></tr>
+        <tr><th>電流 A</th><td id="torqueL">—</td><td id="torqueR">—</td></tr>
+        <tr><th>錯誤碼</th><td id="errL">—</td><td id="errR">—</td></tr>
+        <tr><th>motor_state</th><td id="msL">—</td><td id="msR">—</td></tr>
+      </tbody>
+    </table>
+    <div class="small">刻度 ±80；虛線 ±60 為速度上限，紅線 ±72 為超速線（60×1.2）。三角形＝目標。</div>
+  </section>
+
+  <section class="card wide live" id="chartCard">
+    <h2>最近 60 秒</h2>
+    <canvas id="chartRpm" width="900" height="220"></canvas>
+    <div class="legend"><i class="l-tgtL"></i>tgtL <i class="l-tgtR"></i>tgtR <i class="l-actL"></i>actL <i class="l-actR"></i>actR</div>
+    <canvas id="chartRc" width="900" height="160"></canvas>
+    <div class="legend"><i class="l-ch2"></i>油門 CH2 <i class="l-ch4"></i>轉向 CH4</div>
+  </section>
+
+  <section class="card wide" id="eventCard">
+    <h2>事件 <label class="small"><input type="checkbox" id="showDumpEvents" checked> 顯示傾倒內容的事件</label></h2>
+    <ul id="events"></ul>
+    <details id="rawBox">
+      <summary>原始輸出（最近 200 行）</summary>
+      <pre id="raw"></pre>
+    </details>
+  </section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>
